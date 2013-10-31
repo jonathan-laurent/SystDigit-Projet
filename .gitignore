@@ -1,3 +1,5 @@
 */_build/*
 tp1/*test.byte
 tp1/test/*_sch.net
+camlsim/*.byte
+*.swp
