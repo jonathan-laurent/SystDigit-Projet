@@ -138,11 +138,9 @@ let print_dumb_program oc p =
 		begin match n with
 		| VBit(x) -> fprintf ff "%d" (if x then 1 else 0)
 		| VBitArray(a) ->
-			let k = ref 0 in
 			for i = 0 to Array.length a - 1 do
-				k := 2 * !k + (if a.(i) then 1 else 0)
-			done;
-			fprintf ff "%d" !k
+				fprintf ff "%d" (if a.(i) then 1 else 0)
+			done
 		end
 	in
 	List.iter

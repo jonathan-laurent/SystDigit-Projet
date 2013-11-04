@@ -23,7 +23,7 @@ void usage() {
 }
 
 // Arguments to be parsed
-int steps = 42;
+int steps = 12;
 char *romfile = NULL;
 char *filename = NULL;
 char *infile = NULL;
@@ -80,10 +80,12 @@ int main(int argc, char **argv) {
 
 	// Run
 	t_machine *machine = init_machine(program);
+	i = 0;
 	while (i < steps || steps == -1) {
 		read_inputs(machine, input);
 		machine_step(machine);
 		write_outputs(machine, output);
+		i++;
 	}
 
 	// Cleanup

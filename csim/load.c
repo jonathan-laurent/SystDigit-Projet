@@ -11,16 +11,39 @@
 
 #include "sim.h"
 
+t_value read_bool(FILE *stream, t_value *mask) {
+	t_value r = 0;
+	t_value pow = 1;
+
+	char c;
+	if (mask != NULL) *mask = 0;
+
+	for(;;) {
+		fscanf(stream, "%c", &c);
+		if (c == '1') {
+			r |= pow;
+		} else if (c != '0') {
+			break;
+		}
+		if (mask != NULL) (*mask) |= pow;
+
+		pow *= 2;
+	}
+
+	return r;
+}
+
 void read_arg(FILE *stream, t_arg *dest) {
-	if (fscanf(stream, "$%Ld ", &(dest->val)) > 0) {
-		dest->source_var = -1;
+	dest->mask = 0;
+	if (fscanf(stream, "$") > 0) {
+		dest->Val = read_bool(stream, &dest->mask);
 	} else {
-		fscanf(stream, "%d ", &(dest->source_var));
+		fscanf(stream, "%d ", &(dest->SrcVar));
 	}
 }
 
 t_program *load_dumb_netlist (FILE *stream) {
-	int i;
+	int i, j;
 
 	// let us suppose that the input to be read is well-formed.
 	t_program *p = malloc(sizeof(t_program));
@@ -31,7 +54,9 @@ t_program *load_dumb_netlist (FILE *stream) {
 	
 	for (i = 0; i < p->n_vars; i++) {
 		fscanf(stream, "%d ", &(p->vars[i].size));
-		p->vars[i].mask = (0xFFFFFFFFFFFFFFFF >> (64 - p->vars[i].size));
+		for(j = 0; j < p->vars[i].size; j++) {
+			p->vars[i].mask = (p->vars[i].mask << 1) | 1;
+		}
 
 		p->vars[i].name = malloc(42);	// let's bet that the name of a variable will never be longer than 42 chars
 		fscanf(stream, "%s\n", p->vars[i].name);
@@ -84,7 +109,7 @@ t_program *load_dumb_netlist (FILE *stream) {
 				fscanf(stream, "%d %d ", &(p->eqs[i].Ram.addr_size), &(p->eqs[i].Ram.word_size));
 				read_arg(stream, &(p->eqs[i].Ram.read_addr));
 				read_arg(stream, &(p->eqs[i].Ram.write_enable));
-				read_arg(stream, &(p->eqs[i].Ram.write_enable));
+				read_arg(stream, &(p->eqs[i].Ram.write_addr));
 				read_arg(stream, &(p->eqs[i].Ram.data));
 				break;
 			case C_CONCAT:
@@ -101,4 +126,6 @@ t_program *load_dumb_netlist (FILE *stream) {
 				break;
 		}
 	}
+
+	return p;
 }

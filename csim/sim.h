@@ -24,7 +24,11 @@
 #define OP_NAND 3
 
 // Data structures
+
+
+// Use 64-bit ints as bit arrays. Bit index 0 is bitmask 1, bit index 1 is bitmask 2, etc.
 typedef unsigned long long int t_value;
+// Identifier for the variables of the circuit.
 typedef int t_id;
 
 typedef struct {		// a variable in the simulator
@@ -34,8 +38,11 @@ typedef struct {		// a variable in the simulator
 } t_variable;
 
 typedef struct {
-	t_value val;
-	t_id source_var;		// if source_var == -1 then it's a direct value, else it's that variable
+	t_value mask;				// if direct value, mask = all possible bits. Else mask = 0
+	union {
+		t_value Val;
+		t_id SrcVar;		// if source_var == -1 then it's a direct value, else it's that variable
+	};
 } t_arg;
 
 typedef struct {
@@ -93,20 +100,23 @@ typedef struct {
 // machine = execution instance
 
 typedef union {
-	t_value r_val;
-	t_value *mem_val;
+	t_value RegVal;
+	t_value *RamData;
 } t_mem_reg_data;
 
 typedef struct {
 	t_program *prog;
-	t_value *var_values;
-	t_mem_reg_data *mem_data;
+	t_value *var_values;		// indexed by variable ID
+	t_mem_reg_data *mem_data;	// indexed by equation number
 } t_machine;
 
 
 // The functions for doing stuff with these data structures
 
+t_value read_bool(FILE *stream, t_value* mask);
+
 t_program *load_dumb_netlist(FILE *stream);
+
 t_machine *init_machine(t_program *p);
 void read_inputs(t_machine *m, FILE *stream);
 void machine_step(t_machine *m);
