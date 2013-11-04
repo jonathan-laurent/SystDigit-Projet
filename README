@@ -1,0 +1,38 @@
+
+Système Digital 2013-2014
+Cours J.Vuillemin, TD T.Bourke
+
+Alex AUVOLAT (Info 2013)
+
+
+Contents of the repository :
+
+sched/
+	A scheduler for netlists.
+	Input : a netlist.
+	Output : a netlist with topologically sorted operators
+	 plus a dumbed-down version for input to the C circuit simulator
+	$ cd sched/
+	$ ocamlbuild main.byte
+
+camlsim/
+	A circuit simulator written in OCaml.
+	This program does NOT do the scheduling. The netlist must be passed through sched/ first.
+	$ cd camlsim/
+	$ ocamlbuild simulator.byte
+
+csim/
+	A circuit simulator written in C.
+	This program does NOT do the scheduling.
+	This program does NOT read a netlist, it reads a specifically formatted dumbed-down netlist, that
+	is output by the scheduler.
+	$ cd csim
+	$ make
+
+minijazz/
+	The MiniJazz compiler (not our doing).
+
+*.pdf
+	Documentation about the project.
+
+
