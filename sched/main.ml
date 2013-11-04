@@ -1,0 +1,50 @@
+let simulate = ref false
+let number_steps = ref (-1)
+let sim_path = ref "./netlist_simulator.byte"
+let dumb_down = ref false
+
+let compile filename =
+  try
+    let p = Netlist.read_file filename in
+    let out_name = (Filename.chop_suffix filename ".net") ^ "_sch.net" in
+	let dumb_out_name = (Filename.chop_suffix filename ".net") ^ ".dumb" in
+	let q = ref p in
+
+    begin try
+		q := Scheduler.schedule p
+      with
+        | Scheduler.Combinational_cycle ->
+            Format.eprintf "The netlist has a combinatory cycle.@.";
+            exit 2;
+    end;
+
+    let out = open_out out_name in
+    Netlist_printer.print_program out !q;
+	close_out out;
+	let dumb_out = open_out dumb_out_name in
+	Netlist_printer.print_dumb_program dumb_out !q;
+	close_out dumb_out;
+
+    if !simulate then (
+      let simulator =
+        if !number_steps = -1 then
+			!sim_path
+        else
+			!sim_path ^ " -n " ^ (string_of_int !number_steps)
+      in
+      ignore (Unix.system (simulator^" "^(if !dumb_down then dumb_out_name else out_name)))
+    )
+  with
+    | Netlist.Parse_error s -> Format.eprintf "An error accurred: %s@." s; exit 2
+
+let main () =
+  Arg.parse
+    ["-s", Arg.Set simulate, "Launch the simulator";
+	 "-sim", Arg.Set_string sim_path, "Path to the circuit simulator";
+	 "-d", Arg.Set dumb_down, "Pass the dumbed-down netlist to the simulator (for the C simulator)";
+     "-n", Arg.Set_int number_steps, "Number of steps to simulate"]
+    compile
+    ""
+;;
+
+main ()
