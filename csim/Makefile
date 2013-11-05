@@ -1,4 +1,4 @@
-main: main.o load.o sim.o
+csim: main.o load.o sim.o
 	gcc -o csim $^
 
 %.o: %.c

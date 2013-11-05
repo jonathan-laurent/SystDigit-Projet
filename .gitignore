@@ -1,7 +1,7 @@
+*.swp
 */_build/*
 */*.byte
-sched/test/*_sch.net
-sched/test/*.dumb
-*.swp
 csim/csim
 *.o
+tests/*.net
+tests/*.dumb

@@ -60,6 +60,10 @@ t_program *load_dumb_netlist (FILE *stream) {
 
 		p->vars[i].name = malloc(42);	// let's bet that the name of a variable will never be longer than 42 chars
 		fscanf(stream, "%s\n", p->vars[i].name);
+
+		if (p->vars[i].size >= 8*sizeof(t_value)) {
+			fprintf(stderr, "Warning: variable %s might be too big for machine integers.\n", p->vars[i].name);
+		}
 	}
 
 	// read input list

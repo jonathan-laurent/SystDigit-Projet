@@ -16,7 +16,7 @@ void usage() {
 	printf ("\nUsage:\n\tcsim [options] <netlist_file>\n\n");
 	printf("Available options:\n");
 	printf("\n    -rom <file>\n\tLoad a filename as a ROM file for the machine\n");
-	printf("\n    -n <steps>\n\tOnly run #steps steps of simulation (-1 = infinity)\n");
+	printf("\n    -n <steps>\n\tOnly run #steps steps of simulation (0 = infinity)\n");
 	printf("\n    -in <in-file>\n\tRead inputs from given file (eg. named pipe). Defaults to STDIN.\n");
 	printf("\n    -out <out-file>\n\tWrite outputs to given file (eg. named pipe). Defaults to STDOut.\n");
 	exit(1);
@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
 	// Run
 	t_machine *machine = init_machine(program);
 	i = 0;
-	while (i < steps || steps == -1) {
+	while (i < steps || steps == 0) {
 		read_inputs(machine, input);
 		machine_step(machine);
 		write_outputs(machine, output);
