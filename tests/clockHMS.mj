@@ -55,14 +55,21 @@ and_each<n>(a, b:[n]) = (o:[n]) where
 	end if
 end where
 
-count_mod<n, m>(in:[n]) = (out:[n]) where
-	(incr, carry) = adder<n>(in, 1 . repeat<n-1>(0), 0);
-	neq = not (equal<n, m>(incr));
-	out = and_each<n>(neq, incr)
+count_mod<n, m>(in:[n], op) = (out:[n], reset) where
+	(incr, carry) = adder<n>(in, op . repeat<n-1>(0), 0);
+	reset = equal<n, m>(incr);
+	neq = not reset;
+	out = and_each<n>(neq, incr);
 end where
 
-main() = (out:[4],next:[4]) where
-	next = count_mod<4, 12>(out);
-	out = reg_n<4>(next)
+main() = (count_sec:[6],count_min:[6],count_hour:[5],next_day) where
+	(count_sec, aug_min) = count_mod<6, 60>(save_sec, 1);
+	save_sec = reg_n<6>(count_sec);
+	
+	(count_min, aug_hour) = count_mod<6, 60>(save_min, aug_min);
+	save_min = reg_n<6>(count_min);
+
+	(count_hour, next_day) = count_mod<5, 24>(save_hour, aug_hour);
+	save_hour = reg_n<5>(count_hour)
 end where
 

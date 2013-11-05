@@ -219,10 +219,6 @@ let topo_sort p =
 (* Apply all the simplification passes,
 	in the order given in the header of this file
 *)
-let dump_varlist p =
-	print_string "Eq list:\n";
-	List.iter (fun (n, _) -> print_string ("- "^n^"\n")) p.p_eqs
-
 let rec simplify p =
 	let steps = [
 		cascade_slices;
@@ -235,7 +231,6 @@ let rec simplify p =
 	let pp, use = List.fold_left
 		(fun (x, u) f ->
 			let xx, uu = f x in 
-			dump_varlist xx;
 			(xx, u || uu))
 		(p, false) steps in
 	if use then simplify pp else pp
