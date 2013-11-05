@@ -8,10 +8,13 @@ let compile filename =
     let p = Netlist.read_file filename in
     let out_name = (Filename.chop_suffix filename ".net") ^ "_sch.net" in
 	let dumb_out_name = (Filename.chop_suffix filename ".net") ^ ".dumb" in
-	let q = ref p in
+    let out_opt_name = (Filename.chop_suffix filename ".net") ^ "_sch_opt.net" in
+	let dumb_opt_out_name = (Filename.chop_suffix filename ".net") ^ "_opt.dumb" in
+	let q, q_opt = ref p, ref p in
 
     begin try
-		q := (Simplify.simplify (Scheduler.schedule p))
+		q := Scheduler.schedule p;
+		q_opt := Simplify.simplify p
       with
         | Scheduler.Combinational_cycle ->
             Format.eprintf "The netlist has a combinatory cycle.@.";
@@ -24,6 +27,13 @@ let compile filename =
 	let dumb_out = open_out dumb_out_name in
 	Netlist_printer.print_dumb_program dumb_out !q;
 	close_out dumb_out;
+
+	let out_opt = open_out out_opt_name in
+	Netlist_printer.print_program out_opt !q_opt;
+	close_out out_opt;
+	let dumb_opt_out = open_out dumb_opt_out_name in
+	Netlist_printer.print_dumb_program dumb_opt_out !q_opt;
+	close_out dumb_opt_out;
 
     if !simulate then (
       let simulator =

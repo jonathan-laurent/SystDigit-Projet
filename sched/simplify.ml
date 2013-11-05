@@ -8,14 +8,15 @@
 	- transform k = SELECT 0 var into k = var when var is also one bit
 	- look for variables with same equation, put the second to identity
 	- eliminate k' for each equation k' = k
-	- eliminate dead equations
+	- topological sort
 
-	These simplifications are run on a topologically sorted list of equations (see main.ml)
+	TODO : eliminate unused variables. problem : they are hard to identify
 *)
 
 open Netlist_ast
 
 module Sset = Set.Make(String)
+module Smap = Map.Make(String)
 
 (* Simplify cascade slicing/selecting *)
 let cascade_slices p =
@@ -23,15 +24,14 @@ let cascade_slices p =
 	let eqs_new = List.map
 		(fun (n, eq) -> (n, match eq with
 			| Eslice(u, v, Avar(x)) ->
-				let nu, nx =
+				let dec, nx =
 					if Hashtbl.mem slices x then begin
-						let ku, kx = Hashtbl.find slices x in
-						(ku + u, kx)
+						Hashtbl.find slices x
 					end else 
-						 (u, x)
+						 (0, x)
 				in
-				Hashtbl.add slices n (nu, nx);
-				Eslice(nu, v, Avar(nx))
+				Hashtbl.add slices n (u + dec, nx);
+				Eslice(u + dec, v + dec, Avar(nx))
 			| Eselect(u, Avar(x)) ->
 				begin try
 					let ku, kx = Hashtbl.find slices x in
@@ -46,7 +46,7 @@ let cascade_slices p =
 		p_inputs = p.p_inputs;
 		p_outputs = p.p_outputs;
 		p_vars = p.p_vars;
-	}
+	}, false
 
 (* Simplifies some trivial arithmetic possibilites :
 	a and 1 = a
@@ -55,6 +55,9 @@ let cascade_slices p =
 	a or 0 = a
 	a xor 0 = a
 	slice i i x = select i x
+	concat const const = const.const
+	slice i j const = const.[i..j]
+	select i const = const.[i]
 *)
 let arith_simplify p =
 	{
@@ -75,13 +78,30 @@ let arith_simplify p =
 
 			| Eslice(i, j, k) when i = j ->
 				(n, Eselect(i, k))
+
+			| Econcat(Aconst(a), Aconst(b)) ->
+				let aa = match a with
+					| VBit(a) -> [| a |]
+					| VBitArray(a) -> a
+				in
+				let ba = match b with
+					| VBit(a) -> [| a |]
+					| VBitArray(a) -> a
+				in
+				(n, Earg(Aconst(VBitArray(Array.append aa ba))))
+			
+			| Eslice(i, j, Aconst(VBitArray(a))) ->
+				(n, Earg(Aconst(VBitArray(Array.sub a i (j - i + 1)))))
+			
+			| Eselect(i, Aconst(VBitArray(a))) ->
+				(n, Earg(Aconst(VBit(a.(i)))))
 			
 			| _ -> (n, eq))
 			p.p_eqs;
 		p_inputs = p.p_inputs;
 		p_outputs = p.p_outputs;
 		p_vars = p.p_vars;
-	}
+	}, false
 
 (* if x is one bit, then :
 	select 0 x = x
@@ -98,7 +118,7 @@ let select_to_id p =
 		p_inputs = p.p_inputs;
 		p_outputs = p.p_outputs;
 		p_vars = p.p_vars;
-	}
+	}, false
 
 (*
 	If a = eqn(v1, v2, ...) and b = eqn(v1, v2, ...)   <- the same equation
@@ -128,7 +148,7 @@ let same_eq_simplify p =
 		p_inputs = p.p_inputs;
 		p_outputs = p.p_outputs;
 		p_vars = p.p_vars;
-	}
+	}, false
 
 
 (*	Replace one specific variable by another argument in the arguments of all equations
@@ -192,23 +212,31 @@ let rec eliminate_id p =
 	| None -> p, false
 	| Some(n, rep) -> fst (eliminate_id (eliminate_var n rep p)), true
 
-
-(* Eliminate dead equations *)
-let eliminate_dead p =
-	p, false (* TODO *)
-	(* a bit like a topological sort... *)
-
+(* Topological sort *)
+let topo_sort p =
+	(Scheduler.schedule p, false)
 
 (* Apply all the simplification passes,
 	in the order given in the header of this file
 *)
+let dump_varlist p =
+	print_string "Eq list:\n";
+	List.iter (fun (n, _) -> print_string ("- "^n^"\n")) p.p_eqs
+
 let rec simplify p =
-	let p1 = cascade_slices p in
-	let p2 = arith_simplify p1 in
-	let p3 = select_to_id p2 in
-	let p4 = same_eq_simplify p3 in
-	let p5, use5 = eliminate_id p4 in
-	let p6, use6 = eliminate_dead p5 in
-	let pp = p6 in
-	if use5 || use6 then simplify pp else pp
+	let steps = [
+		cascade_slices;
+		arith_simplify;
+		select_to_id;
+		same_eq_simplify; 
+		eliminate_id;
+		topo_sort;
+	] in
+	let pp, use = List.fold_left
+		(fun (x, u) f ->
+			let xx, uu = f x in 
+			dump_varlist xx;
+			(xx, u || uu))
+		(p, false) steps in
+	if use then simplify pp else pp
 

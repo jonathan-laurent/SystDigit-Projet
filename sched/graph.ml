@@ -44,7 +44,7 @@ let has_cycle g =
 			ret
 	in
 	let ret = List.fold_left (fun x n -> x || (if n.n_mark = Visited then false else visit n)) false g.g_nodes
-	in clear_marks g; ret;;
+	in clear_marks g; ret
 
 let topological g =
 	clear_marks g;
@@ -57,5 +57,28 @@ let topological g =
 			end
 	in
 	let ret = List.fold_left (fun x n -> aux x n) [] g.g_nodes
-	in clear_marks g; List.rev ret;;
+	in clear_marks g; List.rev ret
 
+let topological_from_roots g roots =
+	clear_marks g;
+	let rec aux acc n =
+		if n.n_mark = Visited
+			then acc
+			else begin
+				n.n_mark <- Visited;
+				n.n_label :: (List.fold_left (fun x n -> aux x n) acc n.n_linked_by)
+			end
+	in
+	let ret = List.fold_left
+		(fun x n -> aux x (node_for_label g n)) [] roots
+	in
+	let used = List.fold_left
+		(fun s n ->
+			if n.n_mark = Visited then
+				n.n_label::s
+			else
+				s)
+		[]
+		g.g_nodes in
+	clear_marks g;
+	List.rev ret, used

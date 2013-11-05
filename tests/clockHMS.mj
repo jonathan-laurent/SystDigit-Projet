@@ -13,19 +13,18 @@ repeat<n>(a) = (x:[n]) where
 end where
 
 fulladder(a,b,c) = (s, r) where
-  s = (a ^ b) ^ c;
-  r = (a & b) + ((a ^ b) & c);
+	s = (a ^ b) ^ c;
+	r = (a & b) + ((a ^ b) & c);
 end where
 
 adder<n>(a:[n], b:[n], c_in) = (o:[n], c_out) where
-  if n = 0 then
-    o = [];
-    c_out = 0
-  else
-    (s_n, c_n1) = fulladder(a[0], b[0], c_in);
-    (s_n1, c_out) = adder<n-1>(a[1..], b[1..], c_n1);
-    o = s_n . s_n1
-  end if
+	if n = 1 then
+		(o, c_out) = fulladder(a[0], b[0], c_in)
+	else
+		(s_n, c_n1) = fulladder(a[0], b[0], c_in);
+		(s_n1, c_out) = adder<n-1>(a[1..], b[1..], c_n1);
+		o = s_n . s_n1
+	end if
 end where
 
 equal<n, m>(a:[n]) = (eq) where
@@ -41,29 +40,29 @@ equal<n, m>(a:[n]) = (eq) where
 end where
 
 reg_n<n>(a:[n]) = (r:[n]) where
-	if n = 0 then
-		r = []
+	if n = 1 then
+		r = reg a[0]
 	else
-		r = (reg a[0]) . (reg_n<n-1>(r[1..]))
+		r = (reg a[0]) . (reg_n<n-1>(a[1..]))
 	end if
 end where
 
 and_each<n>(a, b:[n]) = (o:[n]) where
-	if n = 0 then
-		o = []
+	if n = 1 then
+		o = b[0] and a
 	else
 		o = (b[0] and a) . and_each<n-1>(a, b[1..])
 	end if
 end where
 
 count_mod<n, m>(in:[n]) = (out:[n]) where
-	neq = not (equal<n, m>(in));
 	(incr, carry) = adder<n>(in, 1 . repeat<n-1>(0), 0);
+	neq = not (equal<n, m>(incr));
 	out = and_each<n>(neq, incr)
 end where
 
-main() = (ret:[2],out:[2]) where
-	out = count_mod<2, 3>(ret);
-	ret = reg_n<2>(out)
+main() = (out:[4],next:[4]) where
+	next = count_mod<4, 12>(out);
+	out = reg_n<4>(next)
 end where
 

@@ -21,11 +21,15 @@ let read_exp eq =
 	| Eslice(_, _, a) -> add_arg a []
 	| Eselect(_, a) -> add_arg a []
 	in
-		aux eq;;
+		aux eq
 
-let schedule p =
+let prog_eq_map p =
+	List.fold_left
+		(fun x (vn, eqn) -> Smap.add vn eqn x)
+		Smap.empty p.p_eqs
+
+let prog_graph p eq_map =
 	let graph = Graph.mk_graph() in
-	let eq_map = List.fold_left (fun x (vn, eqn) -> Smap.add vn eqn x) Smap.empty p.p_eqs in
 	(* Add variables as graph nodes *)
 	List.iter (fun (k, _) -> Graph.add_node graph k) p.p_eqs;
 	(* Add dependencies as graph edges *)
@@ -36,17 +40,26 @@ let schedule p =
 		p.p_eqs;
 	(* Verify there are no cycles *)
 	if Graph.has_cycle graph then raise Combinational_cycle;
+	graph
+
+let schedule p =
+	let eq_map = prog_eq_map p in
+	let graph = prog_graph p eq_map in
+
 	(* Topological sort of graph nodes *)
 	let topo_vars = Graph.topological graph in
 	(* Construct new program with sorted expression list *)
 	{
 		p_eqs = List.fold_right
-			(fun n x -> if Smap.mem n eq_map then (n, Smap.find n eq_map)::x else x) topo_vars [];
+			(fun n x ->
+				if Smap.mem n eq_map then
+					(n, Smap.find n eq_map)::x
+				else x)
+			topo_vars [];
 		p_inputs = p.p_inputs;
 		p_outputs = p.p_outputs;
 		p_vars = p.p_vars;
 	}
-	;;
 
 
 
