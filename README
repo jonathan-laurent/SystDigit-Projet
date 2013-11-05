@@ -6,6 +6,7 @@ Alex AUVOLAT (Info 2013)
 
 
 Contents of the repository :
+----------------------------
 
 sched/
 	A scheduler for netlists.
@@ -35,4 +36,19 @@ minijazz/
 *.pdf
 	Documentation about the project.
 
+
+
+CONVENTION FOR BINARY VALUES
+----------------------------
+
+/!\ This convention is contrary to the one used in the example file nadder.mj
+	(Therefore I have modified that file...)
+
+The bit array [a_0 a_1 a_2 ... a_n-1] represents the decimal number :
+	a_0 + 2*a_1 + 4*a_2 + ... + 2^(n-1)*a_n-1
+
+When represented in binary, we write the bits in the order :
+	a_0 a_1 a_2 ... a_n-1
+
+/!\ BINARY NUMBERS ARE WRITTEN REVERSE !
 

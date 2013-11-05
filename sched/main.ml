@@ -11,7 +11,7 @@ let compile filename =
 	let q = ref p in
 
     begin try
-		q := Scheduler.schedule p
+		q := (Simplify.simplify (Scheduler.schedule p))
       with
         | Scheduler.Combinational_cycle ->
             Format.eprintf "The netlist has a combinatory cycle.@.";

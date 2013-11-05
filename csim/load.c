@@ -35,10 +35,10 @@ t_value read_bool(FILE *stream, t_value *mask) {
 
 void read_arg(FILE *stream, t_arg *dest) {
 	dest->mask = 0;
-	if (fscanf(stream, "$") > 0) {
-		dest->Val = read_bool(stream, &dest->mask);
+	if (fscanf(stream, "$%d ", &(dest->SrcVar))) {
+		// ok, value is read
 	} else {
-		fscanf(stream, "%d ", &(dest->SrcVar));
+		dest->Val = read_bool(stream, &dest->mask);
 	}
 }
 

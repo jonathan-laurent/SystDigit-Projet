@@ -133,8 +133,8 @@ let print_dumb_program oc p =
 	fprintf ff "%d\n" (List.length p.p_eqs);
 	(* write equations *)
 	let print_arg = function
-	| Avar(k) -> fprintf ff " %d" (Hashtbl.find var_id k)
-	| Aconst(n) -> fprintf ff " $";
+	| Avar(k) -> fprintf ff " $%d" (Hashtbl.find var_id k)
+	| Aconst(n) -> fprintf ff " ";
 		begin match n with
 		| VBit(x) -> fprintf ff "%d" (if x then 1 else 0)
 		| VBitArray(a) ->

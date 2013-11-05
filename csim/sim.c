@@ -55,7 +55,8 @@ t_machine *init_machine (t_program *p) {
 void read_inputs(t_machine *m, FILE *stream) {
 	/*	FORMAT :
 		For each input in the list, *in the order specified*,
-		the binary value for that variable.
+		either '/' followed by the decimal value
+		or the binary value
 	*/
 	int i;
 	t_id var;
@@ -66,7 +67,12 @@ void read_inputs(t_machine *m, FILE *stream) {
 	for (i = 0; i < p->n_inputs; i++) {
 		var = p->inputs[i];
 		fscanf(stream, " ");
-		m->var_values[var] = read_bool(stream, NULL);
+		if (fscanf(stream, "/%lu", &(m->var_values[var]))) {
+			// ok, value is read
+		} else {
+			m->var_values[var] = read_bool(stream, NULL);
+		}
+		m->var_values[var] &= p->vars[var].mask;
 	}
 
 }
@@ -179,7 +185,7 @@ void machine_step(t_machine *m) {
 			if (e != 0) {
 				a = get_var(m, p->eqs[i].Ram.write_addr);
 				d = get_var(m, p->eqs[i].Ram.data);
-				printf("Write ram %lx = %lx\n", a, d);
+				if (DEBUG) fprintf(stderr, "Write ram %lx = %lx\n", a, d);
 				m->mem_data[i].RamData[a] = d;
 			}
 		}
@@ -189,7 +195,7 @@ void machine_step(t_machine *m) {
 void write_outputs(t_machine *m, FILE *stream) {
 	/*	FORMAT :
 		For each output value, a line in the form
-			var_name	binary_value
+			var_name	binary_value	decimal_value
 	*/
 	int i;
 	t_id var;
@@ -205,7 +211,7 @@ void write_outputs(t_machine *m, FILE *stream) {
 			v >>= 1;
 			mask >>= 1;
 		}
-		fprintf(stream, "\n");
+		fprintf(stream, "\t%ld\n", m->var_values[var]);
 	}
 	fprintf(stream, "\n");
 }
