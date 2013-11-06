@@ -1,9 +1,11 @@
-
 Système Digital 2013-2014
 Cours J.Vuillemin, TD T.Bourke
 
 Alex AUVOLAT (Info 2013)
 
+
+Introduction
+============
 
 Contents of the repository :
 ----------------------------
@@ -13,32 +15,48 @@ sched/
 	Input : a netlist.
 	Output : a netlist with topologically sorted operators
 	 plus a dumbed-down version for input to the C circuit simulator
+	This program is also capable of a few optimisation (usually reduces netlist
+	size by 1/4).
 	$ cd sched/
 	$ ocamlbuild main.byte
-
-camlsim/
-	A circuit simulator written in OCaml.
-	This program does NOT do the scheduling. The netlist must be passed through sched/ first.
-	$ cd camlsim/
-	$ ocamlbuild simulator.byte
 
 csim/
 	A circuit simulator written in C.
 	This program does NOT do the scheduling.
-	This program does NOT read a netlist, it reads a specifically formatted dumbed-down netlist, that
-	is output by the scheduler.
+	This program does NOT read a netlist, it reads a specifically formatted
+	dumbed-down netlist, that is output by the scheduler.
 	$ cd csim
 	$ make
 
+camlsim/
+	A circuit simulator written in OCaml.
+	This program does NOT do the scheduling. The netlist must be passed through
+	the scheduler first.
+	This program is *highly incomplete* and not recomended for real use..
+	$ cd camlsim/
+	$ ocamlbuild simulator.byte
+
 minijazz/
-	The MiniJazz compiler (not our doing).
+	The MiniJazz compiler (given by the teachers).
 
 *.pdf
 	Documentation about the project.
 
 
 
-CONVENTION FOR BINARY VALUES
+REFERENCES
+----------
+
+  -	Computer organization and design : the hardware/software interface
+	4th ed
+	Chapters 2 to 4
+
+
+
+INTERNALS
+=========
+
+Convention for binary values
 ----------------------------
 
 /!\ This convention is contrary to the one used in the example file nadder.mj
@@ -49,15 +67,123 @@ The bit array [a_0 a_1 a_2 ... a_n-1] represents the decimal number :
 
 When represented in binary, we write the bits in the order :
 	a_0 a_1 a_2 ... a_n-1
+Even though the normal notation for a binary number is :
+	a_n-1 a_n-2 ... a_0
 
 /!\ BINARY NUMBERS ARE WRITTEN REVERSE !
 
+What we call a shift-left does a left shift on the representation as a binary
+number, but we use the reverse notation here. Therefore in the ALU, the shift-left
+should actually right-shift the bits when they are seen in the order a0, a1, ...
 
-REFERENCES
-----------
+The right shift is also inverted.
+- left shift -> right shift
+- right shift -> left shift
+- left shift logical -> rigth shift logical
 
-  -	Computer organization and design : the hardware/software interface
-	4th ed
-	Chapters 2 to 4
+
+The dumbed-down netlist format
+------------------------------
+
+The C simulator does NOT read a properly formatted netlist, but only a file
+representing it written in a simple format, that can be parsed with only calls
+to `scanf`. The file is organized as follows :
+
+<number of variables>
+<variable types and names *1>
+<inputs *2>
+<outputs *2>
+<number of equations>
+<equation list *3>
+
+*1 : this section contains for each variable a line in the format :
+<variable width> <variable name>
+
+In the rest of the files, the variables are referenced by their position in the
+list given in *1 (the first line gives variable #0, etc.)
+
+*2 : these section contain one line :
+<number of inputs/outputs> [<variable number> ...]
+
+*3 : this section contains one line for each equation, in the following format :
+<destination variable> <equation type> [<argument> ...]
+
+Table of equation types :
+
+Type#	Desc	Arguments
+0		Arg		<arg>
+1		Reg		<var#>
+2		Not		<arg>
+3		Binop	<op# *4> <arg> <arg>
+4		Mux		<arg> <arg:when false> <arg:when true>
+5		Rom		<addr_size> <word_size> <arg:read_addr>
+6		Ram		<addr_size> <word_size> <arg:read_addr> <arg:write_enable>
+					<arg:write_addr> <arg:data>
+7		Concat	<arg> <arg>
+8		Slice	<begin> <end> <arg>
+9		Select	<id> <arg>
+
+An argument (<arg> or <arg:*>) can be either a binary value, represented by the
+bits in standard order defined above, either a reference to another variable,
+with the syntax $<var_id>
+
+*4 : The operators are :
+0	OR
+1	XOR
+2	AND
+3	NAND
+	
+This syntax is formalized by the reference implementation provided in the source
+file csim/load.h.
+
+TODO : to simplify the internals, create an intermediate format where <arg> can
+be nothing but a reference to another variable. All constants will then have to
+be assigned to a constant-type variable that can be counted among the inputs (or
+whatever - anyway, no need to recalculate them at every iteration).
+
+
+The Input/Output format
+-----------------------
+
+The C simulator is capable of reading inputs for each step from a file (by
+default stdin, but can be redirected from a file using the -in option) and of
+writing the outputs at each step to a file (by default stdout, but can be
+redirected with -out).
+
+The input format is extremely straightforward : at each step, read a line
+containing for each input variable, *in the order given in the program file*,
+either a binary value (represented by a series of bits given in the standard
+order), either a decimal value prefixed with a slash (/), which is then
+converted to binary according to the standard representation defined above.
+
+The output format contains at each step one line for each output variable, in
+the format :
+<variable name>\t<binary representation>\t<decimal representation>
+The output contains an empty line at the end of every cycle.
+
+
+How ROMs are handled
+--------------------
+
+The MiniJazz language has many flaws, and one is the impossibility to specify
+what is to be loaded in a ROM. One possibility (not implemented yet) would be
+that each ROM-type equation uses data from a file which is found by looking at
+the name of the variable that is read from the ROM. For example, if we have :
+	decode7_128 = ROM 4 7 _l_42_122
+which is a possible output for the MiniJazz compiler, and if the simulator is
+provided with the command-line argument :
+	-rom decode7 path/to/decode7.rom
+then the compiler will detect the prefix `decode7` in the variable name
+decode7_128, and use the ROM from the file specified on the command line.
+
+Suggested format for the ROM files :
+
+<address width> <word size>
+<data>
+
+The data is composed of 2^(address width) values separated by spaces. If they
+have no prefix, they are read as binary. If they have a / prefix, they are read
+as decimal (this enables the use of whichever representation is preferred).
+
 
 

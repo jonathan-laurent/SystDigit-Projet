@@ -1,0 +1,62 @@
+const word_size = 4
+
+(* Transforme un fil en une nappe de n fils avec la meme valeur *)
+power<n>(i) = (o:[n]) where
+  if n = 0 then
+    o = []
+  else
+    o = power<n-1>(i) . i
+  end if
+end where
+
+mux_n<n>(c, a:[n], b:[n]) = (o:[n]) where
+  if n = 0 then
+    o = []
+  else
+    o_n1 = mux_n<n-1>(c, a[1..n-1], b[1..n-1]);
+    o_n = mux(c, a[0], b[0]);
+    o = o_n . o_n1
+  end if
+end where
+
+lshifter_n<n, p>(sh:[n], a:[p]) = (o:[p]) where
+  if n = 0 then
+    o = a
+  else
+	  u = mux_n<p>(sh[n-1], a, power<2^(n-1)>(false) . a[0..p-2^(n-1)-1]);
+	  o = lshifter_n<n-1, p>(sh[0..n-2], u)
+ end if
+end where
+
+rshifter_n<n, p>(sh:[n], arith, a:[p]) = (o:[p]) where
+  if n = 1 then
+    added_bit = mux(arith, false, a[p-1]);
+    o = mux_n<p>(sh[0], a, a[1..p-1] . added_bit)
+  else
+    added_bit = mux(arith, false, a[p - 1]);
+    u = mux_n<p>(sh[n-1], a, a[2^(n-1)..p-1] . power<2^(n-1)>(added_bit));
+    o = rshifter_n<n-1, p>(sh[0..n-2], arith, u)
+  end if
+end where
+
+or_n<n>(a:[n],b:[n]) = (o:[n]) where
+	if n = 0 then
+		o = []
+	else
+		o = (a[0] or b[0]) . or_n<n-1>(a[1..], b[1..])
+	end if
+end where
+
+and_each<n>(a,b:[n]) = (o:[n]) where
+	if n = 0 then
+		o = []
+	else
+		o = (a and b[0]) . and_each<n-1>(a, b[1..])
+	end if
+end where
+
+main(sh:[2], arith, left, a:[word_size]) = (o:[word_size]) where
+	x = rshifter_n<2, word_size>(sh, arith, a);
+	xx = and_each<word_size>(not left, x);
+	o = xx
+end where
