@@ -25,14 +25,14 @@ let compile filename =
     Netlist_printer.print_program out !q;
 	close_out out;
 	let dumb_out = open_out dumb_out_name in
-	Netlist_printer.print_dumb_program dumb_out !q;
+	Netlist_dumb.print_program dumb_out !q;
 	close_out dumb_out;
 
 	let out_opt = open_out out_opt_name in
 	Netlist_printer.print_program out_opt !q_opt;
 	close_out out_opt;
 	let dumb_opt_out = open_out dumb_opt_out_name in
-	Netlist_printer.print_dumb_program dumb_opt_out !q_opt;
+	Netlist_dumb.print_program dumb_opt_out !q_opt;
 	close_out dumb_opt_out;
 
     if !simulate then (
