@@ -52,7 +52,7 @@ let mkbinstr a =
 
 let make_program_dumb p =
 	let vars = ref [] in
-	let var_map = Hashtbl.create (Env.size p.p_vars) in
+	let var_map = Hashtbl.create (Env.cardinal p.p_vars) in
 	() (* TODO *)
 	(*
 		1. Identify constants and create new variables for them, put them on the variable list
