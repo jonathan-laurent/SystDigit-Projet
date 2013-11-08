@@ -93,12 +93,16 @@ let make_program_dumb p =
 		p.p_eqs;
 	
 	(* Make ids for variables *)
-	Env.iter
-		(fun k v ->
-			vars := { name = k; size = v }::(!vars);
-			Hashtbl.add var_map k (!next_id);
-			next_id := !next_id + 1)
-		p.p_vars;
+	let add_var n =
+		if not (Hashtbl.mem var_map n) then begin
+			vars := { name = n; size = Env.find n p.p_vars }::(!vars);
+			Hashtbl.add var_map n (!next_id);
+			next_id := !next_id + 1
+		end
+	in
+	List.iter add_var p.p_inputs;
+	List.iter (fun (n, _) -> add_var n) p.p_eqs;
+	Env.iter (fun n _ -> add_var n) p.p_vars;
 
 	let var_id = Hashtbl.find var_map in
 	let arg_id = function
