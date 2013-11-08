@@ -69,37 +69,29 @@ let arith_simplify p =
 			(fun (n, eq) ->
 			let useless = ref false in
 			let neq = match eq with
-			| Ebinop(Or, Aconst(VBit(false)), x) -> Earg(x)
-			| Ebinop(Or, Aconst(VBit(true)), x) -> Earg(Aconst(VBit(true)))
-			| Ebinop(Or, x, Aconst(VBit(false))) -> Earg(x)
-			| Ebinop(Or, x, Aconst(VBit(true))) -> Earg(Aconst(VBit(true)))
+			| Ebinop(Or, Aconst([|false|]), x) -> Earg(x)
+			| Ebinop(Or, Aconst([|true|]), x) -> Earg(Aconst([|true|]))
+			| Ebinop(Or, x, Aconst([|false|])) -> Earg(x)
+			| Ebinop(Or, x, Aconst([|true|])) -> Earg(Aconst([|true|]))
 
-			| Ebinop(And, Aconst(VBit(false)), x) -> Earg(Aconst(VBit(false)))
-			| Ebinop(And, Aconst(VBit(true)), x) -> Earg(x)
-			| Ebinop(And, x, Aconst(VBit(false))) -> Earg(Aconst(VBit(false)))
-			| Ebinop(And, x, Aconst(VBit(true))) -> Earg(x)
+			| Ebinop(And, Aconst([|false|]), x) -> Earg(Aconst([|false|]))
+			| Ebinop(And, Aconst([|true|]), x) -> Earg(x)
+			| Ebinop(And, x, Aconst([|false|])) -> Earg(Aconst([|false|]))
+			| Ebinop(And, x, Aconst([|true|])) -> Earg(x)
 
-			| Ebinop(Xor, Aconst(VBit(false)), x) -> Earg(x)
-			| Ebinop(Xor, x, Aconst(VBit(false))) -> Earg(x)
+			| Ebinop(Xor, Aconst([|false|]), x) -> Earg(x)
+			| Ebinop(Xor, x, Aconst([|false|])) -> Earg(x)
 
 			| Eslice(i, j, k) when i = j -> Eselect(i, k)
 
 			| Econcat(Aconst(a), Aconst(b)) ->
-				let aa = match a with
-					| VBit(a) -> [| a |]
-					| VBitArray(a) -> a
-				in
-				let ba = match b with
-					| VBit(a) -> [| a |]
-					| VBitArray(a) -> a
-				in
-				Earg(Aconst(VBitArray(Array.append aa ba)))
+				Earg(Aconst(Array.append a b))
 			
-			| Eslice(i, j, Aconst(VBitArray(a))) ->
-				Earg(Aconst(VBitArray(Array.sub a i (j - i + 1))))
+			| Eslice(i, j, Aconst(a)) ->
+				Earg(Aconst(Array.sub a i (j - i + 1)))
 			
-			| Eselect(i, Aconst(VBitArray(a))) ->
-				Earg(Aconst(VBit(a.(i))))
+			| Eselect(i, Aconst(a)) ->
+				Earg(Aconst([|a.(i)|]))
 			
 			| _ ->  useless := true; eq in
 			if not !useless then usefull := true;
@@ -112,16 +104,19 @@ let arith_simplify p =
 
 (* if x is one bit, then :
 	select 0 x = x
+  and same thing with select
 *)
 let select_to_id p =
 	let usefull = ref false in
 	{
 		p_eqs = List.map
 			(fun (n, eq) -> match eq with
-			| Eselect(0, Avar(id)) when
-				Env.find id p.p_vars = TBit || Env.find id p.p_vars = TBitArray(1) ->
-					usefull := true;
-					(n, Earg(Avar(id)))
+			| Eselect(0, Avar(id)) when Env.find id p.p_vars = 1 ->
+				usefull := true;
+				(n, Earg(Avar(id)))
+			| Eslice(0, sz, Avar(id)) when Env.find id p.p_vars = sz + 1 ->
+				usefull := true;
+				(n, Earg(Avar(id)))
 			| _ -> (n, eq))
 			p.p_eqs;
 		p_inputs = p.p_inputs;
@@ -225,7 +220,36 @@ let rec eliminate_id p =
 
 (* Eliminate dead variables *)
 let eliminate_dead p =
-	(p, false)
+	let rec living basis =
+		let new_basis = List.fold_left
+			(fun b2 (n, eq) ->
+				if Sset.mem n b2 then
+					List.fold_left
+						(fun x k -> Sset.add k x)
+						b2
+						(Scheduler.read_exp_all eq)
+				else
+					b2)
+			basis (List.rev p.p_eqs)
+		in
+		if Sset.cardinal new_basis > Sset.cardinal basis
+			then living new_basis
+			else new_basis
+	in
+	let outs = List.fold_left (fun x k -> Sset.add k x) Sset.empty p.p_outputs in
+	let ins = List.fold_left (fun x k -> Sset.add k x) Sset.empty p.p_inputs in
+	let live = living (Sset.union outs ins) in
+	{
+		p_eqs = List.filter (fun (n, _) -> Sset.mem n live) p.p_eqs;
+		p_inputs = p.p_inputs;
+		p_outputs = p.p_outputs;
+		p_vars = Env.fold
+			(fun k s newenv -> 
+				if Sset.mem k live
+					then Env.add k s newenv
+					else newenv)
+			p.p_vars Env.empty
+	}, (Sset.cardinal live < Env.cardinal p.p_vars)
 
 (* Topological sort *)
 let topo_sort p =
@@ -235,21 +259,28 @@ let topo_sort p =
 (* Apply all the simplification passes,
 	in the order given in the header of this file
 *)
-let rec simplify p =
-	let steps = [
-		topo_sort, "topo_sort";
+let rec simplify_with steps p =
+	let pp, use = List.fold_left
+		(fun (x, u) (f, n) ->
+			print_string n;
+			let xx, uu = f x in 
+			print_string (if uu then " *\n" else "\n");
+			(xx, u || uu))
+		(p, false) steps in
+	if use then simplify_with steps pp else pp
+
+let simplify p =
+	let p = simplify_with [ topo_sort, "topo_sort" ] p in
+	let p = simplify_with [
 		cascade_slices, "cascade_slices";
 		arith_simplify, "arith_simplify";
 		select_to_id, "select_to_id";
 		same_eq_simplify, "same_eq_simplify"; 
 		eliminate_id, "eliminate_id";
-	] in
-	let pp, use = List.fold_left
-		(fun (x, u) (f, n) ->
-			print_string n;
-			let xx, uu = f x in 
-			print_string (if uu then "*\n" else "\n");
-			(xx, u || uu))
-		(p, false) steps in
-	if use then simplify pp else pp
+	] p in
+	let p = simplify_with [
+		eliminate_dead, "eliminate_dead";
+		topo_sort, "topo_sort";	(* make sure last step is a topological sort *)
+	] p in
+	p
 

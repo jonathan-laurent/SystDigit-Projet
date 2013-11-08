@@ -23,6 +23,25 @@ let read_exp eq =
 	in
 		aux eq
 
+let read_exp_all eq =
+	let add_arg x l = match x with
+		| Avar(f) -> f::l
+		| Aconst(_) -> l
+	in
+	let aux = function
+	| Earg(x) -> add_arg x []
+	| Ereg(i) -> [i]
+	| Enot(x) -> add_arg x []
+	| Ebinop(_, x, y) -> add_arg x (add_arg y [])
+	| Emux(a, b, c) -> add_arg a (add_arg b (add_arg c []))
+	| Erom(_, _, a) -> add_arg a []
+	| Eram(_, _, a, b, c, d) -> add_arg a (add_arg b (add_arg c (add_arg d [])))
+	| Econcat(u, v) -> add_arg u (add_arg v [])
+	| Eslice(_, _, a) -> add_arg a []
+	| Eselect(_, a) -> add_arg a []
+	in
+		aux eq
+
 let prog_eq_map p =
 	List.fold_left
 		(fun x (vn, eqn) -> Smap.add vn eqn x)

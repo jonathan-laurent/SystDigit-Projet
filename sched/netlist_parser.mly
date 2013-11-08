@@ -6,7 +6,7 @@
 	for i = 0 to String.length n - 1 do
 		if n.[i] = '1' then ret.(i) <- true
 	done;
-	VBitArray(ret)
+	ret
 
 %}
 
@@ -56,5 +56,5 @@ arg:
 
 var: x=NAME ty=ty_exp { (x, ty) }
 ty_exp:
-  | /*empty*/ { TBit }
-  | COLON n=INT { TBitArray (int_of_string n) }
+  | /*empty*/ { 1 }
+  | COLON n=INT { int_of_string n }

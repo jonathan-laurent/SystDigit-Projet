@@ -1,3 +1,5 @@
+const word_size = 8
+
 fulladder(a,b,c) = (s, r) where
   s = (a ^ b) ^ c;
   r = (a & b) + ((a ^ b) & c);
@@ -14,6 +16,6 @@ adder<n>(a:[n], b:[n], c_in) = (o:[n], c_out) where
   end if
 end where
 
-main(a:[8], b:[8]) = (o:[8], c) where
-  (o, c) = adder<8>(a,b,0)
+main(a:[word_size], b:[word_size]) = (o:[word_size], c) where
+  (o, c) = adder<word_size>(a,b,0)
 end where

@@ -19,9 +19,8 @@ let rec print_list print lp sep rp ff = function
       List.iter (fprintf ff "%s %a" sep print) l;
       fprintf ff "%s" rp
 
-let print_ty ff ty = match ty with
-  | TBit -> ()
-  | TBitArray n -> fprintf ff " : %d" n
+let print_ty ff n = 
+  fprintf ff " : %d" n
 
 let print_bool ff b =
   if b then
@@ -29,9 +28,8 @@ let print_bool ff b =
   else
     fprintf ff "0"
 
-let print_value ff v = match v with
-  | VBit b -> print_bool ff b
-  | VBitArray a -> Array.iter (print_bool ff) a
+let print_value ff a =
+  Array.iter (print_bool ff) a
 
 let print_arg ff arg = match arg with
   | Aconst v -> print_value ff v

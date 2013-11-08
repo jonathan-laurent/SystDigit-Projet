@@ -10,8 +10,8 @@ module Env = struct
     List.fold_left (fun env (x, ty) -> add x ty env) empty l
 end
 
-type ty = TBit | TBitArray of int
-type value = VBit of bool | VBitArray of bool array
+type ty = int			(* just one for a bit... *)
+type value = bool array
 
 type binop = Or | Xor | And | Nand
 

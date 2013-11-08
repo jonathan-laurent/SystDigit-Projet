@@ -49,9 +49,8 @@ let mkbinstr a =
 	done;
 	r
 
-let const_info = function
-	| VBit(a) -> "$" ^ (mkbinstr [|a|]), 1, [|a|]
-	| VBitArray(a) -> "$" ^ (mkbinstr a), Array.length a, a
+let const_info  a = 
+	"$" ^ (mkbinstr a), Array.length a, a
 
 let make_program_dumb p =
 	(*
@@ -96,13 +95,9 @@ let make_program_dumb p =
 	(* Make ids for variables *)
 	Env.iter
 		(fun k v ->
-		let sz = match v with
-			| TBit -> 1
-			| TBitArray(n) -> n
-		in
-		vars := { name = k; size = sz }::(!vars);
-		Hashtbl.add var_map k (!next_id);
-		next_id := !next_id + 1)
+			vars := { name = k; size = v }::(!vars);
+			Hashtbl.add var_map k (!next_id);
+			next_id := !next_id + 1)
 		p.p_vars;
 
 	let var_id = Hashtbl.find var_map in
@@ -228,94 +223,4 @@ let print_dumb_program oc p =
 
 let print_program oc p =
 	print_dumb_program oc (make_program_dumb p)
-
-
-(* OLD PRINTER CODE *)
-
-
-(*
-
-(* constants *)
-let c_arg = 0
-let c_reg = 1
-let c_not = 2
-let c_binop = 3
-let c_mux = 4
-let c_rom = 5
-let c_ram = 6
-let c_concat = 7
-let c_slice = 8
-let c_select = 9
-
-let print_program oc p =
-	let ff = formatter_of_out_channel oc in
-	(* associate numbers to variables *)
-	let n_vars = Env.fold (fun _ _ n -> n+1) p.p_vars 0 in
-	let n = ref 0 in
-	let var_id = Hashtbl.create n_vars in
-	fprintf ff "%d\n" n_vars;
-	Env.iter
-		(fun  k v ->
-			Hashtbl.add var_id k !n;
-			fprintf ff "%d %s\n"
-				(match v with
-					| TBit -> 1
-					| TBitArray(n) -> n)
-				k;
-			n := !n + 1)
-		p.p_vars;
-	(* write input vars *)
-	fprintf ff "%d" (List.length p.p_inputs);
-	List.iter (fun k -> fprintf ff " %d" (Hashtbl.find var_id k)) p.p_inputs;
-	fprintf ff "\n";
-	(* write output vars *)
-	fprintf ff "%d" (List.length p.p_outputs);
-	List.iter (fun k -> fprintf ff " %d" (Hashtbl.find var_id k)) p.p_outputs;
-	fprintf ff "\n";
-	(* write equations *)
-	fprintf ff "%d\n" (List.length p.p_eqs);
-	(* write equations *)
-	let print_arg = function
-	| Avar(k) -> fprintf ff " $%d" (Hashtbl.find var_id k)
-	| Aconst(n) -> fprintf ff " ";
-		begin match n with
-		| VBit(x) -> fprintf ff "%d" (if x then 1 else 0)
-		| VBitArray(a) ->
-			for i = 0 to Array.length a - 1 do
-				fprintf ff "%d" (if a.(i) then 1 else 0)
-			done
-		end
-	in
-	List.iter
-		(fun (k, eqn) ->
-			fprintf ff "%d " (Hashtbl.find var_id k);
-			begin match eqn with
-			| Earg(a) -> fprintf ff "%d" c_arg;
-				print_arg a
-			| Ereg(i) -> fprintf ff "%d %d" c_reg (Hashtbl.find var_id i)
-			| Enot(a) -> fprintf ff "%d" c_not;
-				print_arg a
-			| Ebinop(o, a, b) -> fprintf ff "%d %d" c_binop (binop_i o);
-				print_arg a;
-				print_arg b
-			| Emux(a, b, c) -> fprintf ff "%d" c_mux;
-				print_arg a; print_arg b; print_arg c
-			| Erom(u, v, a) -> fprintf ff "%d %d %d" c_rom u v;
-				print_arg a
-			| Eram (u, v, a, b, c, d) -> fprintf ff "%d %d %d" c_ram u v;
-				print_arg a; print_arg b; print_arg c; print_arg d
-			| Econcat(a, b) -> fprintf ff "%d" c_concat;
-				print_arg a; print_arg b
-			| Eslice(u, v, a) -> fprintf ff "%d %d %d" c_slice u v;
-				print_arg a
-			| Eselect(i, a) -> fprintf ff "%d %d" c_select i;
-				print_arg a
-			end;
-			fprintf ff "\n")
-		p.p_eqs;
-	(* flush *)
-	fprintf ff "@."
-
-*)
-
 
