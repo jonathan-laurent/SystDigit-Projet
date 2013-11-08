@@ -6,9 +6,9 @@ let dumb_down = ref false
 let compile filename =
   try
     let p = Netlist.read_file filename in
-    let out_name = (Filename.chop_suffix filename ".net") ^ "_sch.net" in
+    let out_name = (Filename.chop_suffix filename ".net") ^ ".snet" in
 	let dumb_out_name = (Filename.chop_suffix filename ".net") ^ ".dumb" in
-    let out_opt_name = (Filename.chop_suffix filename ".net") ^ "_sch_opt.net" in
+    let out_opt_name = (Filename.chop_suffix filename ".net") ^ "_opt.snet" in
 	let dumb_opt_out_name = (Filename.chop_suffix filename ".net") ^ "_opt.dumb" in
 	let q, q_opt = ref p, ref p in
 

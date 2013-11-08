@@ -7,7 +7,7 @@ SIM=../csim/csim
 %.sim: %.dumb
 	$(SIM) $<
 
-%.dumb %_sch.net %_opt.dumb %_sch_opt.net: %.net
+%.dumb %.snet %_opt.dumb %_opt.snet: %.net
 	$(SCHED) $<
 
 %.net: %.mj

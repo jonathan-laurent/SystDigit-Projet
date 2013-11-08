@@ -4,4 +4,5 @@
 csim/csim
 *.o
 tests/*.net
+tests/*.snet
 tests/*.dumb

@@ -11,7 +11,7 @@
 
 #include "sim.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 // Util
 
@@ -39,7 +39,7 @@ t_machine *init_machine (t_program *p) {
 			t_value a = 1;
 			char *o = p->vars[i].name + 1;
 			while (*o) {
-				m->var_values[i] |= a;
+				if (*o == '1') m->var_values[i] |= a;
 				a >>= 1;
 				o++;
 			}
@@ -204,7 +204,7 @@ void machine_step(t_machine *m) {
 	// SAVE REGISTERS && MEMORY
 	for (i = 0; i < p->n_regs; i++) {
 		m->reg_data[i] = m->var_values[p->regs[i].source];
-		if (DEBUG) printf("reg %s <- %s : %lx\n",
+		if (DEBUG) fprintf(stderr, "reg %s <- %s : %lx\n",
 			p->vars[p->regs[i].dest].name,
 			p->vars[p->regs[i].source].name,
 			m->reg_data[i]);
