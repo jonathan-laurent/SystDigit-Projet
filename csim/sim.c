@@ -11,7 +11,7 @@
 
 #include "sim.h"
 
-#define DEBUG 0
+#define DEBUG 1
 
 // Util
 
@@ -30,28 +30,59 @@ t_machine *init_machine (t_program *p) {
 	t_machine *m = malloc(sizeof(t_machine));
 	m->prog = p;
 
+	// Allocate variables
 	m->var_values = malloc(p->n_vars * sizeof(t_value));
 	for (i = 0; i < p->n_vars; i++) {
 		m->var_values[i] = 0;
-	}
-
-	m->mem_data = malloc(p->n_eqs * sizeof(t_value));
-	for (i =0; i < p->n_eqs; i++) {
-		if (p->eqs[i].type == C_REG) {
-			m->mem_data[i].RegVal = 0;
-		} else if (p->eqs[i].type == C_RAM) {
-			m->mem_data[i].RamData = malloc(pow2(p->eqs[i].Ram.addr_size) * sizeof(t_value));
-			for (j = 0; j < pow2(p->eqs[i].Ram.addr_size); j++) {
-				m->mem_data[i].RamData[j] = 0;
+		if (p->vars[i].name[0] == '$') {
+			// setup constant value
+			t_value a = 1;
+			char *o = p->vars[i].name + 1;
+			while (*o) {
+				m->var_values[i] |= a;
+				a >>= 1;
+				o++;
 			}
-		} else {
-			// Leave uninitialized. Not as if anybody cares.
 		}
 	}
-	
+
+	// Allocate space for registers and rams
+	m->reg_data = malloc(p->n_regs * sizeof(t_value));
+	for (i = 0; i < p->n_regs; i++) {
+		m->reg_data[i] = 0;
+	}
+	m->ram_data = malloc(p->n_rams * sizeof(t_value*));
+	for (i = 0; i < p->n_rams; i++) {
+		m->ram_data[i] = malloc(pow2(p->rams[i].addr_size) * sizeof(t_value));
+		for (j = 0; j < pow2(p->rams[i].addr_size); j++) {
+			m->ram_data[i][j] = 0;
+		}
+	}
+
 	return m;
 }
 
+t_value read_bool(FILE *stream, t_value *mask) {
+	t_value r = 0;
+	t_value pow = 1;
+
+	char c;
+	if (mask != NULL) *mask = 0;
+
+	for(;;) {
+		fscanf(stream, "%c", &c);
+		if (c == '1') {
+			r |= pow;
+		} else if (c != '0') {
+			break;
+		}
+		if (mask != NULL) (*mask) |= pow;
+
+		pow *= 2;
+	}
+
+	return r;
+}
 void read_inputs(t_machine *m, FILE *stream) {
 	/*	FORMAT :
 		For each input in the list, *in the order specified*,
@@ -77,59 +108,52 @@ void read_inputs(t_machine *m, FILE *stream) {
 
 }
 
-t_value get_var(t_machine *m, t_arg a) {
-	if (a.mask == 0) return m->var_values[a.SrcVar];
-	return a.Val;
-}
-
-t_value get_mask(t_machine *m, t_arg a) {
-	if (a.mask == 0) return m->prog->vars[a.SrcVar].mask;
-	return a.mask;
-}
-
 void machine_step(t_machine *m) {
 	int i, j;
 	t_value a, b, c, d, e, ma, mb, v;
 	t_program *p = m->prog;
 
 	// READ REGISTERS && MEMORY
-	for (i = 0; i < p->n_eqs; i++) {
-		if (p->eqs[i].type == C_REG) {
-			m->var_values[p->eqs[i].dest_var] = m->mem_data[i].RegVal;
-		} else if (p->eqs[i].type == C_RAM) {
-			e = get_var(m, p->eqs[i].Ram.write_enable);
-			if (e == 0) {
-				a = get_var(m, p->eqs[i].Ram.read_addr);
-				m->var_values[p->eqs[i].dest_var] = m->mem_data[i].RamData[a];
-				if (DEBUG) fprintf(stderr, "Read ram %lx = %lx\n", a, m->mem_data[i].RamData[a]);
-			}
+	for (i = 0; i < p->n_regs; i++) {
+		m->var_values[p->regs[i].dest] = m->reg_data[i];
+		if (DEBUG) fprintf(stderr, "%s <- reg %s : %lx\n",
+			p->vars[p->regs[i].dest].name,
+			p->vars[p->regs[i].dest].name,
+			m->reg_data[i]);
+	}
+	for (i = 0; i < p->n_rams; i++) {
+		e = m->var_values[p->rams[i].write_enable];
+		if (e == 0) {
+			a = m->var_values[p->rams[i].read_addr];
+			b = m->ram_data[i][a];
+			m->var_values[p->rams[i].dest] = b;
+			if (DEBUG) fprintf(stderr, "Read ram %lx = %lx\n", a, b);
 		}
 	}
 
 	// DO THE LOGIC
 	for (i = 0; i < p->n_eqs; i++) {
-		if (p->eqs[i].type == C_REG || p->eqs[i].type == C_RAM) continue;
 		v = 0;
 		switch (p->eqs[i].type) {
-			case C_ARG:
-				v = get_var(m, p->eqs[i].Arg.a);
+			case C_COPY:
+				v = m->var_values[p->eqs[i].Copy.a];
 				break;
 			case C_NOT:
-				v = ~get_var(m, p->eqs[i].Not.a);
+				v = ~m->var_values[p->eqs[i].Not.a];
 				break;
 			case C_BINOP:
-				a = get_var(m, p->eqs[i].Binop.a);
-				b = get_var(m, p->eqs[i].Binop.b);
+				a = m->var_values[p->eqs[i].Binop.a];
+				b = m->var_values[p->eqs[i].Binop.b];
 				if (p->eqs[i].Binop.op == OP_OR) v = a | b;
 				if (p->eqs[i].Binop.op == OP_AND) v = a & b;
 				if (p->eqs[i].Binop.op == OP_XOR) v = a ^ b;
 				if (p->eqs[i].Binop.op == OP_NAND) v = ~(a & b);
 				break;
 			case C_MUX:
-				a = get_var(m, p->eqs[i].Mux.a);
-				b = get_var(m, p->eqs[i].Mux.b);
-				c = get_var(m, p->eqs[i].Mux.c);
-				ma = get_mask(m, p->eqs[i].Mux.a);
+				a = m->var_values[p->eqs[i].Mux.a];
+				b = m->var_values[p->eqs[i].Mux.b];
+				c = m->var_values[p->eqs[i].Mux.c];
+				ma = m->prog->vars[p->eqs[i].Mux.a].mask;
 				if (ma == 1) {
 					v = (a ? c : b);
 				} else {
@@ -140,19 +164,17 @@ void machine_step(t_machine *m) {
 				// TODO
 				break;
 			case C_CONCAT:
-				a = get_var(m, p->eqs[i].Concat.a);
-				b = get_var(m, p->eqs[i].Concat.b);
-				ma = get_mask(m, p->eqs[i].Concat.a);
-				mb = get_mask(m, p->eqs[i].Concat.b);
-				while (ma & mb) {
-					mb <<= 1;
-					b <<= 1;
-				}
-				v = (a & ma) | (b & mb);
-				if (DEBUG) fprintf (stderr, "concat %lx (%lx), %lx (%lx) = %lx .. ", a, ma, b, mb, v);
+				a = m->var_values[p->eqs[i].Concat.a];
+				b = m->var_values[p->eqs[i].Concat.b];
+				ma = p->vars[p->eqs[i].Concat.a].mask;
+				mb = p->vars[p->eqs[i].Concat.b].mask;
+				b <<= p->eqs[i].Concat.shift;
+				v = a | b;
+				if (DEBUG) fprintf (stderr, "concat %lx (&%lx) %lx (&%lx) <%d = %lx .. ",
+					a, ma, b, mb, p->eqs[i].Concat.shift, v);
 				break;
 			case C_SLICE:
-				a = get_var(m, p->eqs[i].Slice.source);
+				a = m->var_values[p->eqs[i].Slice.source];
 				ma = 1;
 				mb = 0;
 				for (j = 0; j <= p->eqs[i].Slice.end; j++) { 
@@ -166,28 +188,34 @@ void machine_step(t_machine *m) {
 					mb, a, v);
 				break;
 			case C_SELECT:
-				a = get_var(m, p->eqs[i].Select.source);
+				a = m->var_values[p->eqs[i].Select.source];
 				v = (a >> p->eqs[i].Select.i) & 1;
 				if (DEBUG) fprintf(stderr, "select %d %lx->%lx .. ",
 					p->eqs[i].Select.i, a, v);
 				break;
 		}
 		m->var_values[p->eqs[i].dest_var] = v & (p->vars[p->eqs[i].dest_var].mask);
-		if (DEBUG) fprintf(stderr, "%s &%lx : %lx\n", p->vars[p->eqs[i].dest_var].name, p->vars[p->eqs[i].dest_var].mask, m->var_values[p->eqs[i].dest_var]);
+		if (DEBUG) fprintf(stderr, "%s &%lx : %lx\n",
+			p->vars[p->eqs[i].dest_var].name,
+			p->vars[p->eqs[i].dest_var].mask,
+			m->var_values[p->eqs[i].dest_var]);
 	}
 
 	// SAVE REGISTERS && MEMORY
-	for (i = 0; i < p->n_eqs; i++) {
-		if (p->eqs[i].type == C_REG) {
-			m->mem_data[i].RegVal = m->var_values[p->eqs[i].Reg.var];
-		} else if (p->eqs[i].type == C_RAM) {
-			e = get_var(m, p->eqs[i].Ram.write_enable);
-			if (e != 0) {
-				a = get_var(m, p->eqs[i].Ram.write_addr);
-				d = get_var(m, p->eqs[i].Ram.data);
-				if (DEBUG) fprintf(stderr, "Write ram %lx = %lx\n", a, d);
-				m->mem_data[i].RamData[a] = d;
-			}
+	for (i = 0; i < p->n_regs; i++) {
+		m->reg_data[i] = m->var_values[p->regs[i].source];
+		if (DEBUG) printf("reg %s <- %s : %lx\n",
+			p->vars[p->regs[i].dest].name,
+			p->vars[p->regs[i].source].name,
+			m->reg_data[i]);
+	}
+	for (i = 0; i < p->n_rams; i++) {
+		e = m->var_values[p->rams[i].write_enable];
+		if (e != 0) {
+			a = m->var_values[p->rams[i].write_addr];
+			d = m->var_values[p->rams[i].data];
+			m->ram_data[i][a] = d;
+			if (DEBUG) fprintf(stderr, "Write ram %lx = %lx\n", a, d);
 		}
 	}
 }

@@ -82,8 +82,8 @@ The right shift is also inverted.
 - left shift logical -> rigth shift logical
 
 
-The dumbed-down netlist format
-------------------------------
+The dumbed-down netlist format (OLD FORMAT)
+-------------------------------------------
 
 The C simulator does NOT read a properly formatted netlist, but only a file
 representing it written in a simple format, that can be parsed with only calls
@@ -142,6 +142,48 @@ be assigned to a constant-type variable that can be counted among the inputs (or
 whatever - anyway, no need to recalculate them at every iteration).
 
 
+The dumbed-down netlist format (NEW FORMAT)
+-------------------------------------------
+
+<var count>
+[for each variable]
+	<var size> <var name>
+<input list size> [for each input <input var id>]
+<out list size> [for each input <output var id>]
+<register list size>
+[for each register]
+	<register destination variable> <register source variable>
+<ram list size>
+[for each ram]
+	<destination variable> <addr size> <word size> <read addr var>
+		<write enable var> <write addr var> <data var>
+<equation list size>
+[for each equation]
+	<destination variable> <equation type> <args...>
+
+Equation types :
+ID	DESCR		ARGS
+--	-----		----
+0	Copy		var_id
+1	Not			var_id
+2	Binop		op_id var_a_id var_b_id
+3	Mux			var_a_id var_b_id
+4	ROM			addr_size word_size write_addr_var_id
+5	Concat		var_a var_b
+6	Slice		begin end var_id
+7	Select		number var_id
+
+Operators :
+0	OR
+1	XOR
+2	AND
+3	NAND
+
+Constant variables are standardized so that their name (eg. $00101)
+gives the value of the constant, therefore there is no need to write a constant
+list in the program file.
+
+
 The Input/Output format
 -----------------------
 
@@ -173,7 +215,7 @@ the name of the variable that is read from the ROM. For example, if we have :
 which is a possible output for the MiniJazz compiler, and if the simulator is
 provided with the command-line argument :
 	-rom decode7 path/to/decode7.rom
-then the compiler will detect the prefix `decode7` in the variable name
+then the simulator will detect the prefix `decode7` in the variable name
 decode7_128, and use the ROM from the file specified on the command line.
 
 Suggested format for the ROM files :

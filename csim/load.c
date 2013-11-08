@@ -11,36 +11,6 @@
 
 #include "sim.h"
 
-t_value read_bool(FILE *stream, t_value *mask) {
-	t_value r = 0;
-	t_value pow = 1;
-
-	char c;
-	if (mask != NULL) *mask = 0;
-
-	for(;;) {
-		fscanf(stream, "%c", &c);
-		if (c == '1') {
-			r |= pow;
-		} else if (c != '0') {
-			break;
-		}
-		if (mask != NULL) (*mask) |= pow;
-
-		pow *= 2;
-	}
-
-	return r;
-}
-
-void read_arg(FILE *stream, t_arg *dest) {
-	dest->mask = 0;
-	if (fscanf(stream, "$%d ", &(dest->SrcVar))) {
-		// ok, value is read
-	} else {
-		dest->Val = read_bool(stream, &dest->mask);
-	}
-}
 
 t_program *load_dumb_netlist (FILE *stream) {
 	int i, j;
@@ -79,6 +49,24 @@ t_program *load_dumb_netlist (FILE *stream) {
 		fscanf(stream, "%d ", &(p->outputs[i]));
 	}
 
+	// read register list
+	fscanf(stream, "%d", &(p->n_regs));
+	p->regs = malloc(p->n_regs * sizeof(t_reg));
+	for (i = 0; i < p->n_regs; i++) {
+		fscanf(stream, "%d %d\n", &(p->regs[i].dest), &(p->regs[i].source));
+	}
+	// read RAM list
+	fscanf(stream, "%d", &(p->n_rams));
+	p->rams = malloc(p->n_rams * sizeof(t_ram));
+	for (i = 0; i < p->n_rams; i++) {
+		fscanf(stream, "%d %d %d %d %d %d %d\n",
+			&(p->rams[i].dest),
+			&(p->rams[i].addr_size),
+			&(p->rams[i].word_size),
+			&(p->rams[i].read_addr), &(p->rams[i].write_enable),
+			&(p->rams[i].write_addr), &(p->rams[i].data));
+	}
+
 	// read equation list
 	fscanf(stream, "%d ", &(p->n_eqs));
 	p->eqs = malloc(p->n_eqs * sizeof(t_equation));
@@ -86,47 +74,45 @@ t_program *load_dumb_netlist (FILE *stream) {
 		fscanf(stream, "%d ", &(p->eqs[i].dest_var));
 		fscanf(stream, "%d ", &(p->eqs[i].type));
 		switch (p->eqs[i].type) {
-			case C_ARG:
-				read_arg(stream, &(p->eqs[i].Arg.a));
-				break;
-			case C_REG:
-				fscanf(stream, "%d ", &(p->eqs[i].Reg.var));
+			case C_COPY:
+				fscanf(stream, "%d ", &(p->eqs[i].Copy.a));
 				break;
 			case C_NOT:
-				read_arg(stream, &(p->eqs[i].Not.a));
+				fscanf(stream, "%d ", &(p->eqs[i].Not.a));
 				break;
 			case C_BINOP:
-				fscanf(stream, "%d ", &(p->eqs[i].Binop.op));
-				read_arg(stream, &(p->eqs[i].Binop.a));
-				read_arg(stream, &(p->eqs[i].Binop.b));
+				fscanf(stream, "%d %d %d ",
+					&(p->eqs[i].Binop.op),
+					&(p->eqs[i].Binop.a),
+					&(p->eqs[i].Binop.b));
 				break;
 			case C_MUX:
-				read_arg(stream, &(p->eqs[i].Mux.a));
-				read_arg(stream, &(p->eqs[i].Mux.b));
-				read_arg(stream, &(p->eqs[i].Mux.c));
+				fscanf(stream, "%d %d %d ",
+					&(p->eqs[i].Mux.a),
+					&(p->eqs[i].Mux.b),
+					&(p->eqs[i].Mux.c));
 				break;
 			case C_ROM:
-				fscanf(stream, "%d %d ", &(p->eqs[i].Rom.addr_size), &(p->eqs[i].Rom.word_size));
-				read_arg(stream, &(p->eqs[i].Rom.read_addr));
-				break;
-			case C_RAM:
-				fscanf(stream, "%d %d ", &(p->eqs[i].Ram.addr_size), &(p->eqs[i].Ram.word_size));
-				read_arg(stream, &(p->eqs[i].Ram.read_addr));
-				read_arg(stream, &(p->eqs[i].Ram.write_enable));
-				read_arg(stream, &(p->eqs[i].Ram.write_addr));
-				read_arg(stream, &(p->eqs[i].Ram.data));
+				fscanf(stream, "%d %d %d ",
+					&(p->eqs[i].Rom.addr_size),
+					&(p->eqs[i].Rom.word_size),
+					&(p->eqs[i].Rom.read_addr));
 				break;
 			case C_CONCAT:
-				read_arg(stream, &(p->eqs[i].Mux.a));
-				read_arg(stream, &(p->eqs[i].Mux.b));
+				fscanf(stream, "%d %d ",
+					&(p->eqs[i].Concat.a),
+					&(p->eqs[i].Concat.b));
+				p->eqs[i].Concat.shift = p->vars[p->eqs[i].Concat.a].size;
 				break;
 			case C_SLICE:
-				fscanf(stream, "%d %d ", &(p->eqs[i].Slice.begin), &(p->eqs[i].Slice.end));
-				read_arg(stream, &(p->eqs[i].Slice.source));
+				fscanf(stream, "%d %d %d ",
+					&(p->eqs[i].Slice.begin),
+					&(p->eqs[i].Slice.end),
+					&(p->eqs[i].Slice.source));
 				break;
 			case C_SELECT:
-				fscanf(stream, "%d ", &(p->eqs[i].Select.i));
-				read_arg(stream, &(p->eqs[i].Select.source));
+				fscanf(stream, "%d %d ", &(p->eqs[i].Select.i),
+					&(p->eqs[i].Select.source));
 				break;
 		}
 	}

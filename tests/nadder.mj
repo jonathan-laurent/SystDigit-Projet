@@ -14,6 +14,6 @@ adder<n>(a:[n], b:[n], c_in) = (o:[n], c_out) where
   end if
 end where
 
-main(a:[4], b:[4]) = (o:[4], c) where
-  (o, c) = adder<4>(a,b,0)
+main(a:[2], b:[2]) = (o:[2], c) where
+  (o, c) = adder<2>(a,b,0)
 end where
