@@ -15,4 +15,5 @@ SIM=../csim/csim
 
 clean:
 	rm *.net
+	rm *.snet
 	rm *.dumb

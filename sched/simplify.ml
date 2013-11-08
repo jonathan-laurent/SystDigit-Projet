@@ -20,6 +20,7 @@ module Smap = Map.Make(String)
 
 (* Simplify cascade slicing/selecting *)
 let cascade_slices p =
+	let usefull = ref false in
 	let slices = Hashtbl.create 42 in
 	let eqs_new = List.map
 		(fun (n, eq) -> (n, match eq with
@@ -31,10 +32,12 @@ let cascade_slices p =
 						 (0, x)
 				in
 				Hashtbl.add slices n (u + dec, nx);
+				if nx <> x || dec <> 0 then usefull := true;
 				Eslice(u + dec, v + dec, Avar(nx))
 			| Eselect(u, Avar(x)) ->
 				begin try
 					let ku, kx = Hashtbl.find slices x in
+					usefull := true;
 					Eselect(ku + u, Avar(kx))
 				with
 					Not_found -> Eselect(u, Avar(x))
@@ -46,7 +49,7 @@ let cascade_slices p =
 		p_inputs = p.p_inputs;
 		p_outputs = p.p_outputs;
 		p_vars = p.p_vars;
-	}, false
+	}, !usefull
 
 (* Simplifies some trivial arithmetic possibilites :
 	a and 1 = a
@@ -60,24 +63,26 @@ let cascade_slices p =
 	select i const = const.[i]
 *)
 let arith_simplify p =
+	let usefull = ref false in
 	{
 		p_eqs = List.map
-			(fun (n, eq) -> match eq with
-			| Ebinop(Or, Aconst(VBit(false)), x) -> (n, Earg(x))
-			| Ebinop(Or, Aconst(VBit(true)), x) -> (n, Earg(Aconst(VBit(true))))
-			| Ebinop(Or, x, Aconst(VBit(false))) -> (n, Earg(x))
-			| Ebinop(Or, x, Aconst(VBit(true))) -> (n, Earg(Aconst(VBit(true))))
+			(fun (n, eq) ->
+			let useless = ref false in
+			let neq = match eq with
+			| Ebinop(Or, Aconst(VBit(false)), x) -> Earg(x)
+			| Ebinop(Or, Aconst(VBit(true)), x) -> Earg(Aconst(VBit(true)))
+			| Ebinop(Or, x, Aconst(VBit(false))) -> Earg(x)
+			| Ebinop(Or, x, Aconst(VBit(true))) -> Earg(Aconst(VBit(true)))
 
-			| Ebinop(And, Aconst(VBit(false)), x) -> (n, Earg(Aconst(VBit(false))))
-			| Ebinop(And, Aconst(VBit(true)), x) -> (n, Earg(x))
-			| Ebinop(And, x, Aconst(VBit(false))) -> (n, Earg(Aconst(VBit(false))))
-			| Ebinop(And, x, Aconst(VBit(true))) -> (n, Earg(x))
+			| Ebinop(And, Aconst(VBit(false)), x) -> Earg(Aconst(VBit(false)))
+			| Ebinop(And, Aconst(VBit(true)), x) -> Earg(x)
+			| Ebinop(And, x, Aconst(VBit(false))) -> Earg(Aconst(VBit(false)))
+			| Ebinop(And, x, Aconst(VBit(true))) -> Earg(x)
 
-			| Ebinop(Xor, Aconst(VBit(false)), x) -> (n, Earg(x))
-			| Ebinop(Xor, x, Aconst(VBit(false))) -> (n, Earg(x))
+			| Ebinop(Xor, Aconst(VBit(false)), x) -> Earg(x)
+			| Ebinop(Xor, x, Aconst(VBit(false))) -> Earg(x)
 
-			| Eslice(i, j, k) when i = j ->
-				(n, Eselect(i, k))
+			| Eslice(i, j, k) when i = j -> Eselect(i, k)
 
 			| Econcat(Aconst(a), Aconst(b)) ->
 				let aa = match a with
@@ -88,43 +93,48 @@ let arith_simplify p =
 					| VBit(a) -> [| a |]
 					| VBitArray(a) -> a
 				in
-				(n, Earg(Aconst(VBitArray(Array.append aa ba))))
+				Earg(Aconst(VBitArray(Array.append aa ba)))
 			
 			| Eslice(i, j, Aconst(VBitArray(a))) ->
-				(n, Earg(Aconst(VBitArray(Array.sub a i (j - i + 1)))))
+				Earg(Aconst(VBitArray(Array.sub a i (j - i + 1))))
 			
 			| Eselect(i, Aconst(VBitArray(a))) ->
-				(n, Earg(Aconst(VBit(a.(i)))))
+				Earg(Aconst(VBit(a.(i))))
 			
-			| _ -> (n, eq))
+			| _ ->  useless := true; eq in
+			if not !useless then usefull := true;
+			(n, neq))
 			p.p_eqs;
 		p_inputs = p.p_inputs;
 		p_outputs = p.p_outputs;
 		p_vars = p.p_vars;
-	}, false
+	}, !usefull
 
 (* if x is one bit, then :
 	select 0 x = x
 *)
 let select_to_id p =
+	let usefull = ref false in
 	{
 		p_eqs = List.map
 			(fun (n, eq) -> match eq with
 			| Eselect(0, Avar(id)) when
 				Env.find id p.p_vars = TBit || Env.find id p.p_vars = TBitArray(1) ->
+					usefull := true;
 					(n, Earg(Avar(id)))
 			| _ -> (n, eq))
 			p.p_eqs;
 		p_inputs = p.p_inputs;
 		p_outputs = p.p_outputs;
 		p_vars = p.p_vars;
-	}, false
+	}, !usefull
 
 (*
 	If a = eqn(v1, v2, ...) and b = eqn(v1, v2, ...)   <- the same equation
 	then say b = a
 *)
 let same_eq_simplify p =
+	let usefull = ref false in
 	let id_outputs =
 		(List.fold_left (fun x k -> Sset.add k x) Sset.empty p.p_outputs) in
 	let eq_map = Hashtbl.create 42 in
@@ -135,9 +145,10 @@ let same_eq_simplify p =
 	let simplify_eq (n, eq) =
 		if Sset.mem n id_outputs then
 			(n, eq)
-		else if Hashtbl.mem eq_map eq then
+		else if Hashtbl.mem eq_map eq then begin
+			usefull := true;
 			(n, Earg(Avar(Hashtbl.find eq_map eq)))
-		else begin
+		end else begin
 			Hashtbl.add eq_map eq n;
 			(n, eq)
 		end
@@ -148,7 +159,7 @@ let same_eq_simplify p =
 		p_inputs = p.p_inputs;
 		p_outputs = p.p_outputs;
 		p_vars = p.p_vars;
-	}, false
+	}, !usefull
 
 
 (*	Replace one specific variable by another argument in the arguments of all equations
@@ -212,25 +223,32 @@ let rec eliminate_id p =
 	| None -> p, false
 	| Some(n, rep) -> fst (eliminate_id (eliminate_var n rep p)), true
 
+(* Eliminate dead variables *)
+let eliminate_dead p =
+	(p, false)
+
 (* Topological sort *)
 let topo_sort p =
 	(Scheduler.schedule p, false)
+
 
 (* Apply all the simplification passes,
 	in the order given in the header of this file
 *)
 let rec simplify p =
 	let steps = [
-		cascade_slices;
-		arith_simplify;
-		select_to_id;
-		same_eq_simplify; 
-		eliminate_id;
-		topo_sort;
+		topo_sort, "topo_sort";
+		cascade_slices, "cascade_slices";
+		arith_simplify, "arith_simplify";
+		select_to_id, "select_to_id";
+		same_eq_simplify, "same_eq_simplify"; 
+		eliminate_id, "eliminate_id";
 	] in
 	let pp, use = List.fold_left
-		(fun (x, u) f ->
+		(fun (x, u) (f, n) ->
+			print_string n;
 			let xx, uu = f x in 
+			print_string (if uu then "*\n" else "\n");
 			(xx, u || uu))
 		(p, false) steps in
 	if use then simplify pp else pp
