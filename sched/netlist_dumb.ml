@@ -14,8 +14,8 @@ type var_id = int
 type const_val = bool array
 (* keep type binop from netlist_ast *)
 
-type reg_var = { dest : var_id; source : var_id }
-type ram_var = { dest : var_id;
+type reg_var = { reg_dest : var_id; source : var_id }
+type ram_var = { ram_dest : var_id;
 	addr_size : int; word_size : int;
 	read_addr : var_id; write_enable : var_id;
 	write_addr : var_id; data : var_id }
@@ -117,7 +117,7 @@ let make_program_dumb p =
 			match eq with
 			| Ereg(x) -> 
 				{
-					dest = var_id n;
+					reg_dest = var_id n;
 					source = var_id x;
 				}::regs, eqs
 			| _ -> regs, (n, eq)::eqs)
@@ -129,7 +129,7 @@ let make_program_dumb p =
 			match eq with
 			| Eram(asz, wsz, ra, we, wa, d) ->
 				{
-					dest = var_id n;
+					ram_dest = var_id n;
 					addr_size = asz;
 					word_size = wsz;
 					read_addr = arg_id ra;
@@ -203,11 +203,11 @@ let print_dumb_program oc p =
 	(* print register list *)
 	fprintf ff "%d\n" (List.length p.d_regs);
 	List.iter (fun (r: reg_var) ->
-		fprintf ff "%d %d\n" r.dest r.source) p.d_regs;
+		fprintf ff "%d %d\n" r.reg_dest r.source) p.d_regs;
 	(* print ram list *)
 	fprintf ff "%d\n" (List.length p.d_rams);
 	List.iter (fun r -> fprintf ff "%d %d %d %d %d %d %d\n"
-				r.dest r.addr_size r.word_size r.read_addr r.write_enable
+				r.ram_dest r.addr_size r.word_size r.read_addr r.write_enable
 				r.write_addr r.data) p.d_rams;
 	(* print equation list *)
 	fprintf ff "%d\n" (List.length p.d_eqs);
