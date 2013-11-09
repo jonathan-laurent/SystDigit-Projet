@@ -111,7 +111,8 @@ t_program *load_dumb_netlist (FILE *stream) {
 					&(p->eqs[i].Slice.source));
 				break;
 			case C_SELECT:
-				fscanf(stream, "%d %d ", &(p->eqs[i].Select.i),
+				fscanf(stream, "%d %d ",
+					&(p->eqs[i].Select.i),
 					&(p->eqs[i].Select.source));
 				break;
 		}

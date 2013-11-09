@@ -227,13 +227,14 @@ void write_outputs(t_machine *m, FILE *stream) {
 	*/
 	int i;
 	t_id var;
+	t_value v, mask;
 	t_program *p = m->prog;
 
 	for (i = 0; i < p->n_outputs; i++) {
 		var = p->outputs[i];
 		fprintf(stream, "%s\t", p->vars[var].name);
-		t_value v = m->var_values[var];
-		t_value mask = p->vars[var].mask;
+		v = m->var_values[var];
+		mask = p->vars[var].mask;
 		while (mask > 0) {
 			fprintf(stream, "%d", v & 1);
 			v >>= 1;
