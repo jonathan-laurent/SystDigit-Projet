@@ -89,7 +89,7 @@ main() = (sec_u:[4],d7_sec_u:[7],sec_d:[4],d7_sec_d:[7],
 	min_d = count_minc . 0;
 	d7_min_d = dec7(min_d);
 
-	(v_hour_u, aug_houru) = count_mod<4, 10>(keep_hour_u, 1);
+	(v_hour_u, aug_houru) = count_mod<4, 10>(keep_hour_u, aug_hour);
 	(v_hour_d, aug_hourd) = adder<2>(keep_hour_d, 0.0, aug_houru);
 	next_day = (equal<4,4>(v_hour_u)) and (equal<2,2>(v_hour_d));
 	hour_u = and_each<4>(not next_day, v_hour_u);
