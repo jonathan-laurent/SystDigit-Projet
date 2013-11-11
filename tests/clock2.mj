@@ -1,0 +1,103 @@
+repeat<n>(a) = (x:[n]) where
+	if n = 0 then
+		x = []
+	else
+		x = a . repeat<n-1>(a)
+	end if
+end where
+
+fulladder(a,b,c) = (s, r) where
+	s = (a ^ b) ^ c;
+	r = (a & b) + ((a ^ b) & c);
+end where
+
+adder<n>(a:[n], b:[n], c_in) = (o:[n], c_out) where
+	if n = 1 then
+		(o, c_out) = fulladder(a[0], b[0], c_in)
+	else
+		(s_n, c_n1) = fulladder(a[0], b[0], c_in);
+		(s_n1, c_out) = adder<n-1>(a[1..], b[1..], c_n1);
+		o = s_n . s_n1
+	end if
+end where
+
+equal<n, m>(a:[n]) = (eq) where
+	if n = 0 then
+		eq = 1
+	else
+		if m - (2 * (m / 2)) = 1 then
+			eq = a[0] & equal<n-1, m/2>(a[1..]);
+		else
+			eq = (not a[0]) & equal<n-1, m/2>(a[1..]);
+		end if
+	end if
+end where
+
+reg_n<n>(a:[n]) = (r:[n]) where
+	if n = 1 then
+		r = reg a[0]
+	else
+		r = (reg a[0]) . (reg_n<n-1>(a[1..]))
+	end if
+end where
+
+and_each<n>(a, b:[n]) = (o:[n]) where
+	if n = 1 then
+		o = b[0] and a
+	else
+		o = (b[0] and a) . and_each<n-1>(a, b[1..])
+	end if
+end where
+
+count_mod<n, m>(in:[n], op) = (out:[n], reset) where
+	(incr, carry) = adder<n>(in, repeat<n>(0), op);
+	reset = equal<n, m>(incr);
+	neq = not reset;
+	out = and_each<n>(neq, incr);
+end where
+
+count_mod_keep<n, m>(op) = (out:[n], reset) where
+	(incr, carry) = adder<n>(in, op . repeat<n-1>(0), 0);
+	reset = equal<n, m>(incr);
+	neq = not reset;
+	out = and_each<n>(neq, incr);
+	in = reg_n<n>(out)
+end where
+
+dec7(i:[4]) = (o:[7]) where
+	decode7 = rom<4,7>(i);
+	o = decode7
+end where
+
+main() = (sec_u:[4],d7_sec_u:[7],sec_d:[4],d7_sec_d:[7],
+		  min_u:[4],d7_min_u:[7],min_d:[4],d7_min_d:[7],
+		  hour_u:[4],d7_hour_u:[7],hour_d:[4],d7_hour_d:[7],
+		  next_day) where
+	(count_seca, aug_seca) = count_mod_keep<2,2>(1);
+	(count_secb, aug_secb) = count_mod_keep<3,5>(aug_seca);
+	(count_secc, aug_min)  = count_mod_keep<3,6>(aug_secb);
+	sec_u = count_seca[0] . count_secb;
+	d7_sec_u = dec7(sec_u);
+	sec_d = count_secc . 0;
+	d7_sec_d = dec7(sec_d);
+
+	(count_mina, aug_mina) = count_mod_keep<2,2>(aug_min);
+	(count_minb, aug_minb) = count_mod_keep<3,5>(aug_mina);
+	(count_minc, aug_hour)  = count_mod_keep<3,6>(aug_minb);
+	min_u = count_mina[0] . count_minb;
+	d7_min_u = dec7(min_u);
+	min_d = count_minc . 0;
+	d7_min_d = dec7(min_d);
+
+	(v_hour_u, aug_houru) = count_mod<4, 10>(keep_hour_u, 1);
+	(v_hour_d, aug_hourd) = adder<2>(keep_hour_d, 0.0, aug_houru);
+	next_day = (equal<4,4>(v_hour_u)) and (equal<2,2>(v_hour_d));
+	hour_u = and_each<4>(not next_day, v_hour_u);
+	hour_d_part = and_each<2>(not next_day, v_hour_d);
+	keep_hour_u = reg_n<4>(hour_u);
+	keep_hour_d = reg_n<2>(hour_d_part);
+	hour_d = hour_d_part . 0 . 0;
+	d7_hour_u = dec7(hour_u);
+	d7_hour_d = dec7(hour_d);
+end where
+

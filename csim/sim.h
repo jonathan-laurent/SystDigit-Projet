@@ -1,8 +1,6 @@
 #ifndef DEF_SIM_H
 #define DEF_SIM_H
 
-// TODO implement ROM
-
 #include <stdio.h>
 
 // Gate types
@@ -25,6 +23,14 @@
 
 // Use 64-bit ints as bit arrays. Bit index 0 is bitmask 1, bit index 1 is bitmask 2, etc.
 typedef unsigned long long int t_value;
+
+typedef struct _s_rom {
+	int addr_size, word_size;
+	t_value *data;
+	const char *prefix;
+	struct _s_rom *next;
+} t_rom;
+
 // Identifier for the variables of the circuit.
 typedef int t_id;
 
@@ -62,7 +68,7 @@ typedef struct {
 			t_id a, b, c;
 		} Mux;
 		struct {
-			int addr_size, word_size;
+			t_rom *rom;
 			t_id read_addr;
 		} Rom;
 		struct {
@@ -109,11 +115,16 @@ typedef struct {
 // The functions for doing stuff with these data structures
 
 t_program *load_dumb_netlist(FILE *stream);
+void add_rom(const char *prefix, FILE *file);
 
 t_machine *init_machine(t_program *p);
 void read_inputs(t_machine *m, FILE *stream);
 void machine_step(t_machine *m);
 void write_outputs(t_machine *m, FILE *stream);
 
+// util
+int pow2(int exp);
+t_value read_bool(FILE *stream, t_value *mask);
+int is_prefix(char *prefix, char *str);
 
 #endif

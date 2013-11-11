@@ -13,16 +13,6 @@
 
 #define DEBUG 0
 
-// Util
-
-int pow2(int exp) {
-	if (exp == 0) return 1;
-	if (exp == 1) return 2;
-	int k = pow2(exp / 2);
-	return (exp % 2 == 0 ? k * k : 2 * k * k);
-}
-
-// The code
 
 t_machine *init_machine (t_program *p) {
 	int i, j;
@@ -62,27 +52,6 @@ t_machine *init_machine (t_program *p) {
 	return m;
 }
 
-t_value read_bool(FILE *stream, t_value *mask) {
-	t_value r = 0;
-	t_value pow = 1;
-
-	char c;
-	if (mask != NULL) *mask = 0;
-
-	for(;;) {
-		fscanf(stream, "%c", &c);
-		if (c == '1') {
-			r |= pow;
-		} else if (c != '0') {
-			break;
-		}
-		if (mask != NULL) (*mask) |= pow;
-
-		pow *= 2;
-	}
-
-	return r;
-}
 void read_inputs(t_machine *m, FILE *stream) {
 	/*	FORMAT :
 		For each input in the list, *in the order specified*,
@@ -161,7 +130,12 @@ void machine_step(t_machine *m) {
 				}
 				break;
 			case C_ROM:
-				// TODO
+				if (p->eqs[i].Rom.rom != NULL) {
+					a = m->var_values[p->eqs[i].Rom.read_addr];
+					v = p->eqs[i].Rom.rom->data[a];
+				} else {
+					v = 0;
+				}
 				break;
 			case C_CONCAT:
 				a = m->var_values[p->eqs[i].Concat.a];

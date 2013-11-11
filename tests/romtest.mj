@@ -1,0 +1,9 @@
+dec7(i:[4]) = (o:[7]) where
+	decode7 = rom<4,7>(i);
+	o = decode7
+end where
+
+main(i1:[4],i2:[4]) = (o1:[7],o2:[7]) where
+	o1 = dec7(i1);
+	o2 = dec7(i2)
+end where

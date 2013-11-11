@@ -11,9 +11,34 @@
 
 #include "sim.h"
 
+t_rom *roms = NULL;
+
+void add_rom(const char *prefix, FILE *file) {
+	int i;
+
+	t_rom *rom = malloc(sizeof(t_rom));
+	rom->prefix = prefix;
+
+	// Load ROM file
+	fscanf(file, "%d %d\n", &(rom->addr_size), &(rom->word_size));
+	rom->data = malloc(pow2(rom->addr_size) * sizeof(t_value));
+
+	for (i = 0; i < pow2(rom->addr_size); i++) {
+		fscanf(file, " ");
+		if (fscanf(file, "/%lu", &(rom->data[i]))) {
+			// ok, value is read
+		} else {
+			rom->data[i] = read_bool(file, NULL);
+		}
+	}
+
+	rom->next = roms;
+	roms = rom;
+}
 
 t_program *load_dumb_netlist (FILE *stream) {
-	int i, j;
+	int i, j, as, ws;
+	t_rom *r;
 
 	// let us suppose that the input to be read is well-formed.
 	t_program *p = malloc(sizeof(t_program));
@@ -94,9 +119,25 @@ t_program *load_dumb_netlist (FILE *stream) {
 				break;
 			case C_ROM:
 				fscanf(stream, "%d %d %d ",
-					&(p->eqs[i].Rom.addr_size),
-					&(p->eqs[i].Rom.word_size),
+					&as, &ws,
 					&(p->eqs[i].Rom.read_addr));
+				p->eqs[i].Rom.rom = NULL;
+				// find corresponding ROM
+				for (r = roms; r != NULL; r = r->next) {
+					if (is_prefix(r->prefix, p->vars[p->eqs[i].dest_var].name)) {
+						if (r->addr_size == as && r->word_size == ws) {
+							p->eqs[i].Rom.rom = r;
+							break;
+						} else {
+							fprintf(stderr,
+								"Error: ROM prefixed by '%s' does not have size corresponding to variable that uses it.\n",
+								r->prefix);
+						}
+					}
+				}
+				if (p->eqs[i].Rom.rom == NULL)
+					fprintf(stderr, "Warning: ROM variable '%s' has no ROM data.\n",
+						p->vars[p->eqs[i].dest_var].name);
 				break;
 			case C_CONCAT:
 				fscanf(stream, "%d %d ",

@@ -12,10 +12,12 @@
 
 #include "sim.h"
 
+
 void usage() {
 	printf ("\nUsage:\n\tcsim [options] <netlist_file>\n\n");
 	printf("Available options:\n");
-	printf("\n    -rom <file>\n\tLoad a filename as a ROM file for the machine\n");
+	printf("\n    -rom <prefix> <file>\n\tLoad a filename as a ROM file for the machine\n");
+	printf("\tA given ROM file is used for all ROM chips with variable name having given prefix\n");
 	printf("\n    -n <steps>\n\tOnly run #steps steps of simulation (0 = infinity)\n");
 	printf("\n    -in <in-file>\n\tRead inputs from given file (eg. named pipe). Defaults to STDIN.\n");
 	printf("\n    -out <out-file>\n\tWrite outputs to given file (eg. named pipe). Defaults to STDOut.\n");
@@ -24,7 +26,6 @@ void usage() {
 
 // Arguments to be parsed
 int steps = 12;
-char *romfile = NULL;
 char *filename = NULL;
 char *infile = NULL;
 char *outfile = NULL;
@@ -34,7 +35,14 @@ int main(int argc, char **argv) {
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-rom")) {
 			if (++i == argc) usage();
-			romfile = argv[i];
+			if (++i == argc) usage();
+			FILE *rom = fopen(argv[i], "r");
+			if (!rom) {
+				fprintf(stderr, "Could not open ROM file: '%s'\n", argv[i]);
+				return 1;
+			}
+			add_rom(argv[i-1], rom);
+			fclose(rom);
 		} else if (!strcmp(argv[i], "-n")) {
 			if (++i == argc) usage();
 			steps = atoi(argv[i]);
