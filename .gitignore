@@ -6,3 +6,6 @@ csim/csim
 tests/*.net
 tests/*.snet
 tests/*.dumb
+rapport_simulateur.ps
+rapport_simulateur.pdf
+*.tm~

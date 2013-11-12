@@ -16,7 +16,7 @@ sched/
 	Output : a netlist with topologically sorted operators
 	 plus a dumbed-down version for input to the C circuit simulator
 	This program is also capable of a few optimisation (usually reduces netlist
-	size by 1/4).
+	size by 1/4 or 1/3).
 	$ cd sched/
 	$ ocamlbuild main.byte
 
@@ -25,7 +25,7 @@ csim/
 	This program does NOT do the scheduling.
 	This program does NOT read a netlist, it reads a specifically formatted
 	dumbed-down netlist, that is output by the scheduler.
-	$ cd csim
+	$ cd csim/
 	$ make
 
 camlsim/
@@ -38,6 +38,9 @@ camlsim/
 
 minijazz/
 	The MiniJazz compiler (given by the teachers).
+
+tests/
+	Various test files.
 
 *.pdf
 	Documentation about the project.
@@ -84,6 +87,8 @@ The right shift is also inverted.
 
 The dumbed-down netlist format (OLD FORMAT)
 -------------------------------------------
+
+This is the description of the old format, not used anymore.
 
 The C simulator does NOT read a properly formatted netlist, but only a file
 representing it written in a simple format, that can be parsed with only calls
@@ -144,6 +149,8 @@ whatever - anyway, no need to recalculate them at every iteration).
 
 The dumbed-down netlist format (NEW FORMAT)
 -------------------------------------------
+
+This is the description of the format currently used by the C simulator.
 
 <var count>
 [for each variable]
@@ -208,17 +215,24 @@ How ROMs are handled
 --------------------
 
 The MiniJazz language has many flaws, and one is the impossibility to specify
-what is to be loaded in a ROM. One possibility (not implemented yet) would be
-that each ROM-type equation uses data from a file which is found by looking at
-the name of the variable that is read from the ROM. For example, if we have :
+what is to be loaded in a ROM (it can be specified in the .mj file, but it won't
+appear in the generated .net file).
+
+To know what file to load in a ROM chip, we recognize a certain prefix in the
+name of the variable holding the ROM. For example, if we have in a netlist the
+following line :
+
 	decode7_128 = ROM 4 7 _l_42_122
+
 which is a possible output for the MiniJazz compiler, and if the simulator is
 provided with the command-line argument :
-	-rom decode7 path/to/decode7.rom
-then the simulator will detect the prefix `decode7` in the variable name
-decode7_128, and use the ROM from the file specified on the command line.
 
-Suggested format for the ROM files :
+	-rom decode7 path/to/decode7.rom
+	
+then the simulator will detect the prefix `decode7` in the variable name
+decode7_128, and use the ROM data from the file specified on the command line.
+
+The format of a ROM file is as follows :
 
 <address width> <word size>
 <data>
