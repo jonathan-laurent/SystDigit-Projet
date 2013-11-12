@@ -141,10 +141,11 @@ with the syntax $<var_id>
 This syntax is formalized by the reference implementation provided in the source
 file csim/load.h.
 
-TODO : to simplify the internals, create an intermediate format where <arg> can
-be nothing but a reference to another variable. All constants will then have to
-be assigned to a constant-type variable that can be counted among the inputs (or
-whatever - anyway, no need to recalculate them at every iteration).
+To simplify the internals, we have created an intermediate format where <arg>
+can be nothing but a reference to another variable. All constants will then have
+to be assigned to a constant-type variable that can be counted among the inputs
+(or whatever - anyway, no need to recalculate them at every iteration). This new
+file format is the one described in the next section.
 
 
 The dumbed-down netlist format (NEW FORMAT)
