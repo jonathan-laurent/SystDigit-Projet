@@ -10,10 +10,7 @@
 #include "sim.h"
 
 int pow2(int exp) {
-	if (exp == 0) return 1;
-	if (exp == 1) return 2;
-	int k = pow2(exp / 2);
-	return (exp % 2 == 0 ? k * k : 2 * k * k);
+	return (1 << exp);
 }
 
 t_value read_bool(FILE *stream, t_value *mask) {

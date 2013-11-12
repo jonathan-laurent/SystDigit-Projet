@@ -244,3 +244,20 @@ as decimal (this enables the use of whichever representation is preferred).
 
 
 
+TODO
+----
+
+- More advanced commands for the simulator (cf Jonathan's simulator)
+- RAM reads give result immediately
+
+NEXT STEPS
+----------
+
+- Define convention for processor input/output
+- Code UI
+- How can we generate netlists with ocaml code ?
+- Code processor
+
+
+
+
