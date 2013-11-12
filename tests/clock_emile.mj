@@ -1,0 +1,78 @@
+cm_2 (i) = (s,r) where
+    s = reg (i xor s);
+    r = i and s
+end where
+
+add<n> (i,a:[n]) = (s:[n],r) where
+    if n = 1 then
+        s = a ^ i;
+        r = a & i
+    else
+        (s_a,r) = add<n-1>(i & a[0], a[1..]);
+        s = (i ^ a[0]) . s_a
+    end if
+end where
+
+cb<n> (i) = (s:[n],r) where
+    if n = 1 then
+        (s,r) = cm_2 (i)
+    else
+        c = reg ( i ^ s[0] );
+        (s_a,r) = cb<n-1>(i & c);
+        s = c . s_a
+    end if
+end where
+
+and_n<n> (a : [n]) = o where
+    if n = 1 then
+        o = a[0]
+    else if n = 0 then
+        o = 1
+    else
+        o = and_n<n/2>(a[..(n/2)-1]) & and_n<n-n/2>(a[n/2..])
+    end if end if
+end where
+
+nxor2_n<n> (a : [n], b : [n]) = o : [n] where
+    if n = 0 then
+        o = []
+    else o = (a[0] ^ not b[0]) . nxor2_n<n-1> (a[1..], b[1..])
+    end if
+end where
+
+eq_m1<n> (i : [n]) = b where
+    b = and_n<n>(nxor2_n<n>(i,0b110111))
+end where
+
+eq_m2<n> (i : [n]) = b where
+    b = and_n<n>(nxor2_n<n>(i,0b11101))
+end where
+
+cm_m_aux<n> (r,i) = s : [n] where
+    if n = 0 then
+        s = []
+    else
+        c = reg ( mux(r,c ^ i,0) );
+        s = c . cm_m_aux<n-1>(r,i & c)
+    end if
+end where
+
+cm_m1<n> (i) = (s:[n],r) where
+    c = reg ( mux(r, i ^ c,0) );
+    s = c . cm_m_aux<n-1>(r,i & c);
+    r = eq_m1<n>(s) & i
+end where
+
+cm_m2<n> (i) = (s:[n],r) where
+    c = reg ( mux(r, i ^ c,0) );
+    s = c . cm_m_aux<n-1>(r,i & c);
+    r = eq_m2<n>(s) & i
+end where
+
+main() = (secs:[6],mins:[6],hours:[5],r_d) where
+    (secs,r_s) = cm_m1<6>(1);
+    (mins,r_m) = cm_m1<6>(r_s);
+	(hours,r_d) = cm_m2<5>(r_m);
+end where
+
+

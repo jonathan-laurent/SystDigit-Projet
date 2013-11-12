@@ -30,7 +30,7 @@ t_machine *init_machine (t_program *p) {
 			char *o = p->vars[i].name + 1;
 			while (*o) {
 				if (*o == '1') m->var_values[i] |= a;
-				a >>= 1;
+				a <<= 1;
 				o++;
 			}
 		}
