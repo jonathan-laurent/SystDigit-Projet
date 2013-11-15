@@ -114,15 +114,17 @@ typedef struct {
 
 // The functions for doing stuff with these data structures
 
+// Implemented in load.c
 t_program *load_dumb_netlist(FILE *stream);
 void add_rom(const char *prefix, FILE *file);
 
+// Implemented in sim.c
 t_machine *init_machine(t_program *p);
 void read_inputs(t_machine *m, FILE *stream);
 void machine_step(t_machine *m);
 void write_outputs(t_machine *m, FILE *stream);
 
-// util
+// Implemented in util.c
 int pow2(int exp);
 t_value read_bool(FILE *stream, t_value *mask);
 int is_prefix(char *prefix, char *str);

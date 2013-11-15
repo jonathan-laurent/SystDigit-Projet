@@ -249,6 +249,7 @@ TODO
 
 - More advanced commands for the simulator (cf Jonathan's simulator)
 - RAM reads give result immediately
+- Optimisation : SELECT/SLICE a variable which is a CONCAT
 
 NEXT STEPS
 ----------
