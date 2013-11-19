@@ -3,6 +3,7 @@
 (*
 	Order of simplifications :
 	- cascade slices and selects
+	- transform k = SLICE i j var when var = CONCAT var' var''
 	- simplify stupid things (a xor 0 = a, a and 0 = 0, etc.)
 	  transform k = SLICE i i var into k = SELECT i var
 	- transform k = SELECT 0 var into k = var when var is also one bit
@@ -50,6 +51,59 @@ let cascade_slices p =
 		p_outputs = p.p_outputs;
 		p_vars = p.p_vars;
 	}, !usefull
+
+(* If
+	var = CONCAT a b
+	x = SLICE i j var
+	or
+	y = SELECT i var
+	then x or y may be simplified
+*)
+let pass_concat p =
+	let usefull = ref false in
+	let concats = Hashtbl.create 42 in
+	List.iter (fun (n, eq) -> match eq with
+			| Econcat(x, y) ->
+				let s1 = match x with
+					| Aconst(a) -> Array.length a
+					| Avar(z) -> Env.find z p.p_vars
+				in let s2 = match y with
+					| Aconst(a) -> Array.length a
+					| Avar(z) -> Env.find z p.p_vars
+				in
+				Hashtbl.add concats n (x, s1, y, s2)
+			| _ -> ()) p.p_eqs;
+	let eqs_new = List.map
+		(fun (n, eq) -> (n, match eq with
+			| Eselect(i, Avar(n)) ->
+				begin try
+					let (x, s1, y, s2) = Hashtbl.find concats n in
+					usefull := true;
+					if i < s1 then
+						Eselect(i, x)
+					else
+						Eselect(i-s1, y)
+				with Not_found -> eq end
+			| Eslice(i, j, Avar(n)) ->
+				begin try
+					let (x, s1, y, s2) = Hashtbl.find concats n in
+					if j < s1 then begin
+						usefull := true;
+						Eslice(i, j, x)
+					end else if i >= s1 then begin
+						usefull := true;
+						Eslice(i - s1, j - s1, y)
+					end else eq
+				with Not_found -> eq end
+			| _ -> eq))
+		p.p_eqs in
+	{
+		p_eqs = eqs_new;
+		p_inputs = p.p_inputs;
+		p_outputs = p.p_outputs;
+		p_vars = p.p_vars;
+	}, !usefull
+				
 
 (* Simplifies some trivial arithmetic possibilites :
 	a and 1 = a
@@ -270,9 +324,10 @@ let rec simplify_with steps p =
 	if use then simplify_with steps pp else pp
 
 let simplify p =
-	let p = simplify_with [ topo_sort, "topo_sort" ] p in
 	let p = simplify_with [
+		topo_sort, "topo_sort";
 		cascade_slices, "cascade_slices";
+		pass_concat, "pass_concat";
 		arith_simplify, "arith_simplify";
 		select_to_id, "select_to_id";
 		same_eq_simplify, "same_eq_simplify"; 
