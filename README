@@ -163,7 +163,7 @@ This is the description of the format currently used by the C simulator.
 	<register destination variable> <register source variable>
 <ram list size>
 [for each ram]
-	<destination variable> <addr size> <word size> <read addr var>
+	<addr size> <word size>
 		<write enable var> <write addr var> <data var>
 <equation list size>
 [for each equation]
@@ -180,6 +180,7 @@ ID	DESCR		ARGS
 5	Concat		var_a var_b
 6	Slice		begin end var_id
 7	Select		number var_id
+8	RAM Read	ram_number var_id
 
 Operators :
 0	OR
@@ -248,8 +249,6 @@ TODO
 ----
 
 - More advanced commands for the simulator (cf Jonathan's simulator)
-- RAM reads give result immediately
-- Optimisation : SELECT/SLICE a variable which is a CONCAT
 
 NEXT STEPS
 ----------

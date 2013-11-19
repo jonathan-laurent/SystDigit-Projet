@@ -90,15 +90,6 @@ void machine_step(t_machine *m) {
 			p->vars[p->regs[i].dest].name,
 			m->reg_data[i]);
 	}
-	for (i = 0; i < p->n_rams; i++) {
-		e = m->var_values[p->rams[i].write_enable];
-		if (e == 0) {
-			a = m->var_values[p->rams[i].read_addr];
-			b = m->ram_data[i][a];
-			m->var_values[p->rams[i].dest] = b;
-			if (DEBUG) fprintf(stderr, "Read ram %lx = %lx\n", a, b);
-		}
-	}
 
 	// DO THE LOGIC
 	for (i = 0; i < p->n_eqs; i++) {
@@ -167,6 +158,10 @@ void machine_step(t_machine *m) {
 				if (DEBUG) fprintf(stderr, "select %d %lx->%lx .. ",
 					p->eqs[i].Select.i, a, v);
 				break;
+			case C_READRAM:
+				a = m->var_values[p->eqs[i].ReadRAM.source];
+				v = m->ram_data[p->eqs[i].ReadRAM.ram_id][a];
+				if (DEBUG) fprintf(stderr, "Read ram %lx = %lx\n", a, v);
 		}
 		m->var_values[p->eqs[i].dest_var] = v & (p->vars[p->eqs[i].dest_var].mask);
 		if (DEBUG) fprintf(stderr, "%s &%lx : %lx\n",

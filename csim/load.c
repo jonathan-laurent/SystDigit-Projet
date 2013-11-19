@@ -84,11 +84,10 @@ t_program *load_dumb_netlist (FILE *stream) {
 	fscanf(stream, "%d", &(p->n_rams));
 	p->rams = malloc(p->n_rams * sizeof(t_ram));
 	for (i = 0; i < p->n_rams; i++) {
-		fscanf(stream, "%d %d %d %d %d %d %d\n",
-			&(p->rams[i].dest),
+		fscanf(stream, "%d %d %d %d %d\n",
 			&(p->rams[i].addr_size),
 			&(p->rams[i].word_size),
-			&(p->rams[i].read_addr), &(p->rams[i].write_enable),
+			&(p->rams[i].write_enable),
 			&(p->rams[i].write_addr), &(p->rams[i].data));
 	}
 
@@ -155,6 +154,11 @@ t_program *load_dumb_netlist (FILE *stream) {
 				fscanf(stream, "%d %d ",
 					&(p->eqs[i].Select.i),
 					&(p->eqs[i].Select.source));
+				break;
+			case C_READRAM:
+				fscanf(stream, "%d %d ",
+					&(p->eqs[i].ReadRAM.ram_id),
+					&(p->eqs[i].ReadRAM.source));
 				break;
 		}
 	}

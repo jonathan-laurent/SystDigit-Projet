@@ -12,6 +12,7 @@
 #define C_CONCAT 5
 #define C_SLICE 6
 #define C_SELECT 7
+#define C_READRAM 8
 
 // Binary operators
 #define OP_OR 0
@@ -45,9 +46,8 @@ typedef struct {
 } t_reg;
 
 typedef struct {
-	t_id dest;
 	int addr_size, word_size;
-	t_id read_addr, write_enable, write_addr, data;
+	t_id write_enable, write_addr, data;
 } t_ram;
 
 typedef struct {
@@ -83,6 +83,10 @@ typedef struct {
 			int i;
 			t_id source;
 		} Select;
+		struct {
+			int ram_id;
+			t_id source;
+		} ReadRAM;
 	};
 } t_equation;
 
@@ -127,6 +131,6 @@ void write_outputs(t_machine *m, FILE *stream);
 // Implemented in util.c
 int pow2(int exp);
 t_value read_bool(FILE *stream, t_value *mask);
-int is_prefix(char *prefix, char *str);
+int is_prefix(const char *prefix, const char *str);
 
 #endif

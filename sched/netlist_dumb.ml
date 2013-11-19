@@ -15,9 +15,9 @@ type const_val = bool array
 (* keep type binop from netlist_ast *)
 
 type reg_var = { reg_dest : var_id; source : var_id }
-type ram_var = { ram_dest : var_id;
+type ram_var = { ram_id : int;
 	addr_size : int; word_size : int;
-	read_addr : var_id; write_enable : var_id;
+	write_enable : var_id;
 	write_addr : var_id; data : var_id }
 
 type dumb_exp =
@@ -29,6 +29,7 @@ type dumb_exp =
 	| Dconcat of var_id * var_id
 	| Dslice of int * int * var_id
 	| Dselect of int * var_id
+	| Dreadram of int * var_id
 
 type dumb_equation = var_id * dumb_exp
 
@@ -123,28 +124,23 @@ let make_program_dumb p =
 			| _ -> regs, (n, eq)::eqs)
 		([],[])
 		p.p_eqs in
-	(* Extract rams *)
+	(* Extract rams, replace arguments by variable id's *)
+	let ram_id = ref 0 in
 	let rams, eq3 = List.fold_left
 		(fun (rams, eqs) (n, eq) ->
-			match eq with
+			let ram2 = ref None in
+			let eq2 = match eq with
 			| Eram(asz, wsz, ra, we, wa, d) ->
-				{
-					ram_dest = var_id n;
+				ram_id := !ram_id + 1;
+				ram2 := Some({
+					ram_id = !ram_id - 1;
 					addr_size = asz;
 					word_size = wsz;
-					read_addr = arg_id ra;
 					write_enable = arg_id we;
 					write_addr = arg_id wa;
 					data = arg_id d;
-				}::rams, eqs
-			| _ -> rams, (n, eq)::eqs)
-		([],[])
-		eq2 in
-	
-	(* Replace arguments by variable id's *)
-	let eqs = List.map
-		(fun (n, eq) ->
-			(var_id n, match eq with
+				});
+				Dreadram(!ram_id - 1, arg_id ra)
 			| Earg(a) -> Dcopy(arg_id a)
 			| Enot(a) -> Dnot(arg_id a)
 			| Ebinop(o, a, b) -> Dbinop(o, arg_id a, arg_id b)
@@ -153,16 +149,22 @@ let make_program_dumb p =
 			| Econcat(a, b) -> Dconcat(arg_id a, arg_id b)
 			| Eslice(u, v, a) -> Dslice(u, v, arg_id a)
 			| Eselect(i, a) -> Dselect(i, arg_id a)
-			| _ -> failwith "This should not happen."))
-		eq3 in
+			| _ -> failwith "This should not happen."
+			in
+				(match !ram2 with | None -> rams | Some k -> k::rams),
+				(var_id n, eq2)::eqs
+			)
+		([],[])
+		eq2 in
 	
+	(* Replace arguments by variable id's *)
 	{
 		d_vars = List.rev (!vars);
 		d_inputs = List.map var_id p.p_inputs;
 		d_outputs = List.map var_id p.p_outputs;
 		d_regs = regs;
-		d_rams = rams;
-		d_eqs = eqs;
+		d_rams = List.rev rams;
+		d_eqs = eq3;
 	}
 		
 
@@ -177,6 +179,7 @@ let c_rom = 4
 let c_concat = 5
 let c_slice = 6
 let c_select = 7
+let c_readram = 8
 
 let binop_id = function
 	| Or -> 0
@@ -206,8 +209,8 @@ let print_dumb_program oc p =
 		fprintf ff "%d %d\n" r.reg_dest r.source) p.d_regs;
 	(* print ram list *)
 	fprintf ff "%d\n" (List.length p.d_rams);
-	List.iter (fun r -> fprintf ff "%d %d %d %d %d %d %d\n"
-				r.ram_dest r.addr_size r.word_size r.read_addr r.write_enable
+	List.iter (fun r -> fprintf ff "%d %d %d %d %d\n"
+				r.addr_size r.word_size r.write_enable
 				r.write_addr r.data) p.d_rams;
 	(* print equation list *)
 	fprintf ff "%d\n" (List.length p.d_eqs);
@@ -220,7 +223,8 @@ let print_dumb_program oc p =
 		| Drom(u, v, a) -> fprintf ff "%d %d %d %d\n" c_rom u v a
 		| Dconcat(a, b) -> fprintf ff "%d %d %d\n" c_concat a b
 		| Dslice(u, v, a) -> fprintf ff "%d %d %d %d\n" c_slice u v a
-		| Dselect(i, a) -> fprintf ff "%d %d %d\n" c_select i a)
+		| Dselect(i, a) -> fprintf ff "%d %d %d\n" c_select i a
+		| Dreadram(i, k) -> fprintf ff "%d %d %d\n" c_readram i k)
 		p.d_eqs;
 	(*flush*)
 	fprintf ff "@."

@@ -35,7 +35,7 @@ t_value read_bool(FILE *stream, t_value *mask) {
 	return r;
 }
 
-int is_prefix(char *prefix, char *str) {
+int is_prefix(const char *prefix, const char *str) {
 	while (*prefix) {
 		if (*prefix != *str) return 0;
 		prefix++;
