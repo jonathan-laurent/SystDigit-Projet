@@ -11,48 +11,40 @@ Contents of the repository :
 ----------------------------
 
 sched/
-	A scheduler for netlists.
-	Input : a netlist.
-	Output : a netlist with topologically sorted operators
-	 plus a dumbed-down version for input to the C circuit simulator
-	This program is also capable of a few optimisation (usually reduces netlist
-	size by 1/4 or 1/3).
-	$ cd sched/
-	$ ocamlbuild main.byte
+    A scheduler for netlists.
+    Input : a netlist.
+    Output : a netlist with topologically sorted operators
+     plus a dumbed-down version for input to the C circuit simulator
+    This program is also capable of a few optimisation (usually reduces netlist
+    size by 1/4 or 1/3).
+    $ cd sched/
+    $ ocamlbuild main.byte
 
 csim/
-	A circuit simulator written in C.
-	This program does NOT do the scheduling.
-	This program does NOT read a netlist, it reads a specifically formatted
-	dumbed-down netlist, that is output by the scheduler.
-	$ cd csim/
-	$ make
-
-camlsim/
-	A circuit simulator written in OCaml.
-	This program does NOT do the scheduling. The netlist must be passed through
-	the scheduler first.
-	This program is *highly incomplete* and not recomended for real use..
-	$ cd camlsim/
-	$ ocamlbuild simulator.byte
+    A circuit simulator written in C.
+    This program does NOT do the scheduling.
+    This program does NOT read a netlist, it reads a specifically formatted
+    dumbed-down netlist, that is output by the scheduler.
+    $ cd csim/
+    $ make
 
 minijazz/
-	The MiniJazz compiler (given by the teachers).
+    The MiniJazz compiler (given by the teachers).
 
 tests/
-	Various test files.
+    Various test files.
 
 *.pdf
-	Documentation about the project.
+    Documentation about the project.
 
 
 
 REFERENCES
 ----------
 
-  -	Computer organization and design : the hardware/software interface
-	4th ed
-	Chapters 2 to 4
+  - Computer organization and design : the hardware/software interface
+    4th ed
+    Chapters 2 to 4
 
 
 
@@ -63,15 +55,15 @@ Convention for binary values
 ----------------------------
 
 /!\ This convention is contrary to the one used in the example file nadder.mj
-	(Therefore I have modified that file...)
+    (Therefore I have modified that file...)
 
 The bit array [a_0 a_1 a_2 ... a_n-1] represents the decimal number :
-	a_0 + 2*a_1 + 4*a_2 + ... + 2^(n-1)*a_n-1
+    a_0 + 2*a_1 + 4*a_2 + ... + 2^(n-1)*a_n-1
 
 When represented in binary, we write the bits in the order :
-	a_0 a_1 a_2 ... a_n-1
+    a_0 a_1 a_2 ... a_n-1
 Even though the normal notation for a binary number is :
-	a_n-1 a_n-2 ... a_0
+    a_n-1 a_n-2 ... a_0
 
 /!\ BINARY NUMBERS ARE WRITTEN REVERSE !
 
@@ -115,29 +107,29 @@ list given in *1 (the first line gives variable #0, etc.)
 
 Table of equation types :
 
-Type#	Desc	Arguments
-0		Arg		<arg>
-1		Reg		<var#>
-2		Not		<arg>
-3		Binop	<op# *4> <arg> <arg>
-4		Mux		<arg> <arg:when false> <arg:when true>
-5		Rom		<addr_size> <word_size> <arg:read_addr>
-6		Ram		<addr_size> <word_size> <arg:read_addr> <arg:write_enable>
-					<arg:write_addr> <arg:data>
-7		Concat	<arg> <arg>
-8		Slice	<begin> <end> <arg>
-9		Select	<id> <arg>
+Type#   Desc    Arguments
+0       Arg     <arg>
+1       Reg     <var#>
+2       Not     <arg>
+3       Binop   <op# *4> <arg> <arg>
+4       Mux     <arg> <arg:when false> <arg:when true>
+5       Rom     <addr_size> <word_size> <arg:read_addr>
+6       Ram     <addr_size> <word_size> <arg:read_addr> <arg:write_enable>
+                    <arg:write_addr> <arg:data>
+7       Concat  <arg> <arg>
+8       Slice   <begin> <end> <arg>
+9       Select  <id> <arg>
 
 An argument (<arg> or <arg:*>) can be either a binary value, represented by the
 bits in standard order defined above, either a reference to another variable,
 with the syntax $<var_id>
 
 *4 : The operators are :
-0	OR
-1	XOR
-2	AND
-3	NAND
-	
+0   OR
+1   XOR
+2   AND
+3   NAND
+    
 This syntax is formalized by the reference implementation provided in the source
 file csim/load.h.
 
@@ -155,38 +147,38 @@ This is the description of the format currently used by the C simulator.
 
 <var count>
 [for each variable]
-	<var size> <var name>
+    <var size> <var name>
 <input list size> [for each input <input var id>]
 <out list size> [for each input <output var id>]
 <register list size>
 [for each register]
-	<register destination variable> <register source variable>
+    <register destination variable> <register source variable>
 <ram list size>
 [for each ram]
-	<addr size> <word size>
-		<write enable var> <write addr var> <data var>
+    <addr size> <word size>
+        <write enable var> <write addr var> <data var>
 <equation list size>
 [for each equation]
-	<destination variable> <equation type> <args...>
+    <destination variable> <equation type> <args...>
 
 Equation types :
-ID	DESCR		ARGS
---	-----		----
-0	Copy		var_id
-1	Not			var_id
-2	Binop		op_id var_a_id var_b_id
-3	Mux			var_a_id var_b_id
-4	ROM			addr_size word_size write_addr_var_id
-5	Concat		var_a var_b
-6	Slice		begin end var_id
-7	Select		number var_id
-8	RAM Read	ram_number var_id
+ID  DESCR       ARGS
+--  -----       ----
+0   Copy        var_id
+1   Not         var_id
+2   Binop       op_id var_a_id var_b_id
+3   Mux         var_a_id var_b_id
+4   ROM         addr_size word_size write_addr_var_id
+5   Concat      var_a var_b
+6   Slice       begin end var_id
+7   Select      number var_id
+8   RAM Read    ram_number var_id
 
 Operators :
-0	OR
-1	XOR
-2	AND
-3	NAND
+0   OR
+1   XOR
+2   AND
+3   NAND
 
 Constant variables are standardized so that their name (eg. $00101)
 gives the value of the constant, therefore there is no need to write a constant
@@ -224,13 +216,13 @@ To know what file to load in a ROM chip, we recognize a certain prefix in the
 name of the variable holding the ROM. For example, if we have in a netlist the
 following line :
 
-	decode7_128 = ROM 4 7 _l_42_122
+    decode7_128 = ROM 4 7 _l_42_122
 
 which is a possible output for the MiniJazz compiler, and if the simulator is
 provided with the command-line argument :
 
-	-rom decode7 path/to/decode7.rom
-	
+    -rom decode7 path/to/decode7.rom
+    
 then the simulator will detect the prefix `decode7` in the variable name
 decode7_128, and use the ROM data from the file specified on the command line.
 

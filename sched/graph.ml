@@ -32,29 +32,29 @@ let find_roots g =
   List.filter (fun n -> n.n_linked_by = []) g.g_nodes
 
 let has_cycle g =
-	clear_marks g;
-	let rec visit n =
-		match n.n_mark with
-		| InProgress -> true
-		| Visited -> false
-		| NotVisited ->
-			n.n_mark <- InProgress;
-			let ret = List.fold_left (fun x n -> x || (visit n)) false n.n_link_to in
-			n.n_mark <- Visited;
-			ret
-	in
-	let ret = List.fold_left (fun x n -> x || (if n.n_mark = Visited then false else visit n)) false g.g_nodes
-	in clear_marks g; ret
+  clear_marks g;
+  let rec visit n =
+    match n.n_mark with
+    | InProgress -> true
+    | Visited -> false
+    | NotVisited ->
+      n.n_mark <- InProgress;
+      let ret = List.fold_left (fun x n -> x || (visit n)) false n.n_link_to in
+      n.n_mark <- Visited;
+      ret
+  in
+  let ret = List.fold_left (fun x n -> x || (if n.n_mark = Visited then false else visit n)) false g.g_nodes
+  in clear_marks g; ret
 
 let topological g =
-	clear_marks g;
-	let rec aux acc n =
-		if n.n_mark = Visited
-			then acc
-			else begin
-				n.n_mark <- Visited;
-				n.n_label :: (List.fold_left (fun x n -> aux x n) acc n.n_linked_by)
-			end
-	in
-	let ret = List.fold_left (fun x n -> aux x n) [] g.g_nodes
-	in clear_marks g; List.rev ret
+  clear_marks g;
+  let rec aux acc n =
+    if n.n_mark = Visited
+      then acc
+      else begin
+        n.n_mark <- Visited;
+        n.n_label :: (List.fold_left (fun x n -> aux x n) acc n.n_linked_by)
+      end
+  in
+  let ret = List.fold_left (fun x n -> aux x n) [] g.g_nodes
+  in clear_marks g; List.rev ret

@@ -26,93 +26,93 @@
 typedef unsigned long long int t_value;
 
 typedef struct _s_rom {
-	int addr_size, word_size;
-	t_value *data;
-	const char *prefix;
-	struct _s_rom *next;
+    int addr_size, word_size;
+    t_value *data;
+    const char *prefix;
+    struct _s_rom *next;
 } t_rom;
 
 // Identifier for the variables of the circuit.
 typedef int t_id;
 
-typedef struct {		// a variable in the simulator
-	t_value mask;
-	int size;
-	char *name;
+typedef struct {        // a variable in the simulator
+    t_value mask;
+    int size;
+    char *name;
 } t_variable;
 
 typedef struct {
-	t_id dest, source;
+    t_id dest, source;
 } t_reg;
 
 typedef struct {
-	int addr_size, word_size;
-	t_id write_enable, write_addr, data;
+    int addr_size, word_size;
+    t_id write_enable, write_addr, data;
 } t_ram;
 
 typedef struct {
-	int type;
-	t_id dest_var;
-	union {
-		struct {
-			t_id a;
-		} Copy;
-		struct {
-			t_id a;
-		} Not;
-		struct {
-			int op;
-			t_id a, b;
-		} Binop;
-		struct {
-			t_id a, b, c;
-		} Mux;
-		struct {
-			t_rom *rom;
-			t_id read_addr;
-		} Rom;
-		struct {
-			t_id a, b;
-			int shift;
-		} Concat;
-		struct {
-			int begin, end;
-			t_id source;
-		} Slice;
-		struct {
-			int i;
-			t_id source;
-		} Select;
-		struct {
-			int ram_id;
-			t_id source;
-		} ReadRAM;
-	};
+    int type;
+    t_id dest_var;
+    union {
+        struct {
+            t_id a;
+        } Copy;
+        struct {
+            t_id a;
+        } Not;
+        struct {
+            int op;
+            t_id a, b;
+        } Binop;
+        struct {
+            t_id a, b, c;
+        } Mux;
+        struct {
+            t_rom *rom;
+            t_id read_addr;
+        } Rom;
+        struct {
+            t_id a, b;
+            int shift;
+        } Concat;
+        struct {
+            int begin, end;
+            t_id source;
+        } Slice;
+        struct {
+            int i;
+            t_id source;
+        } Select;
+        struct {
+            int ram_id;
+            t_id source;
+        } ReadRAM;
+    };
 } t_equation;
 
 
 typedef struct {
-	int n_vars, n_inputs, n_outputs;
-	
-	t_variable *vars;
-	t_id *inputs, *outputs;
+    int n_vars, n_inputs, n_outputs;
+    
+    t_variable *vars;
+    t_id *inputs, *outputs;
 
-	int n_regs, n_rams;
-	t_reg *regs;
-	t_ram *rams;
+    int n_regs, n_rams;
+    t_reg *regs;
+    t_ram *rams;
 
-	int n_eqs;
-	t_equation *eqs;
+    int n_eqs;
+    t_equation *eqs;
 } t_program;
 
 // machine = execution instance
 
 typedef struct {
-	t_program *prog;
-	t_value *var_values;		// indexed by variable ID
+    t_program *prog;
+    t_value *var_values;        // indexed by variable ID
 
-	t_value *reg_data;		// indexed by number in register list
-	t_value **ram_data;		// indexed by number in ram list
+    t_value *reg_data;      // indexed by number in register list
+    t_value **ram_data;     // indexed by number in ram list
 } t_machine;
 
 
