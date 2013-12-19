@@ -3,9 +3,9 @@
 */*.byte
 csim/csim
 *.o
-tests/*.net
-tests/*.snet
-tests/*.dumb
-rapport_simulateur.ps
+*.ps
+*/*.net
+*/*.snet
+*/*.dumb
 rapport_simulateur.pdf
 *.tm~
