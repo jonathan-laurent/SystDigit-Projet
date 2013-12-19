@@ -45,7 +45,28 @@
 
   La mémoire est adressée sur 16 bits, il y a donc 64ko disponnibles.
 
-  Différentes zones de mémoire sont à définir (ROM, RAM, MMIO)
+  On définit plusieurs zones de mémoire :
+
+  <big-table|<tabular*|<tformat|<table|<row|<cell|0x0000 - 0x2FFF>|<cell|VGA
+  Framebuffer (noir et blanc, 336x288)>>|<row|<cell|0x3000 -
+  0x37FF>|<cell|ROM pour police d'écriture>>|<row|<cell|0x3800 -
+  0x3FFF>|<cell|MMIO (seuls quelques octets seront
+  utilisés)>>|<row|<cell|0x4000 - 0x7FFF>|<cell|ROM pour programme
+  utilisateur>>|<row|<cell|0x8000 - 0xFFFF>|<cell|RAM pour programme
+  utilisateur>>>>>|Memory map>
+
+  Les 0x3000 (12288) octets de mémoire pour le VGA correspondent à un
+  affichage bitmappé 336x288 noir et blanc (un octet représente 8 pixels), ce
+  qui fait avec une police d'écriture 8x8 un affichage texte possible en
+  42x36.
+
+  Les 0x0800 (2048) octets de RAM pour la fonte suffisent à définir 256
+  caractères en résolution 8x8 (donc 8 octets par caractère).
+
+  Sur les 0x8000 octets alloués pour la MMIO, on en aura un pour l'entrée
+  série, un pour la sortie série, un pour l'horloge et c'est tout.
+
+  Le reste est auto-explicite.
 
   <section|Jeu d'instruction>
 
@@ -143,17 +164,18 @@
 <\references>
   <\collection>
     <associate|auto-1|<tuple|1|1>>
-    <associate|auto-10|<tuple|4|1>>
-    <associate|auto-11|<tuple|1|2>>
+    <associate|auto-10|<tuple|5|1>>
+    <associate|auto-11|<tuple|4|2>>
     <associate|auto-12|<tuple|2|3>>
+    <associate|auto-13|<tuple|3|?>>
     <associate|auto-2|<tuple|2|1>>
-    <associate|auto-3|<tuple|3|1>>
-    <associate|auto-4|<tuple|3.1|1>>
-    <associate|auto-5|<tuple|1|1>>
-    <associate|auto-6|<tuple|2|1>>
-    <associate|auto-7|<tuple|3|1>>
-    <associate|auto-8|<tuple|4|1>>
-    <associate|auto-9|<tuple|5|1>>
+    <associate|auto-3|<tuple|1|1>>
+    <associate|auto-4|<tuple|3|1>>
+    <associate|auto-5|<tuple|3.1|1>>
+    <associate|auto-6|<tuple|1|1>>
+    <associate|auto-7|<tuple|2|1>>
+    <associate|auto-8|<tuple|3|1>>
+    <associate|auto-9|<tuple|4|1>>
   </collection>
 </references>
 
