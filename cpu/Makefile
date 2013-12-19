@@ -1,0 +1,25 @@
+.SECONDARY:
+
+GENERATOR=netlist_ast.ml netlist_gen.ml netlist_gen.mli netlist_proc.ml
+AUXILLARY=alu.ml
+
+SCHED=../sched/main.byte
+SIM=../csim/csim
+
+%.sim: _build/%.dumb
+	$(SIM) $<
+
+_build/%.dumb _build/%.snet _build/%_opt.dumb _build/%_opt.snet: _build/%.net
+	$(SCHED) $<
+
+_build/%.net: _build/%.byte
+	./$< > $@
+
+_build/%.byte: $(GENERATOR) $(AUXILLARY) %.ml
+	ocamlbuild `basename $@`
+	# remove stupid symbolic link
+	rm `basename $@`
+
+
+clean:
+	rm -rf _build
