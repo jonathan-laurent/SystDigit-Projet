@@ -122,7 +122,7 @@
   signé>>|<row|<cell|>|<cell|>|<cell|3>|<cell|jleru>|<cell|if
   <math|R<rsub|A>\<leqslant\>R<rsub|B>> then
   <math|PC\<leftarrow\>R<rsub|>>>|<cell|non
-  signé>>|<row|<cell|01100>|<cell|>|<cell|>|<cell|>|<cell|>|<cell|>>|<row|<cell|01101>|<cell|>|<cell|>|<cell|>|<cell|>|<cell|>>|<row|<cell|01110>|<cell|>|<cell|>|<cell|>|<cell|>|<cell|>>|<row|<cell|01111>|<cell|>|<cell|>|<cell|>|<cell|>|<cell|>>|<row|<cell|10000>|<cell|K>|<cell|>|<cell|lw>|<cell|<math|R\<leftarrow\>mem<around*|(|R<rprime|'>+d|)>>
+  signé>>|<row|<cell|01100>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|01101>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|01110>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|01111>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|10000>|<cell|K>|<cell|>|<cell|lw>|<cell|<math|R\<leftarrow\>mem<around*|(|R<rprime|'>+d|)>>
   (16 bits)>|<cell|>>|<row|<cell|10001>|<cell|K>|<cell|>|<cell|sw>|<cell|<math|mem<around*|(|R<rprime|'>+d|)>\<leftarrow\>R>
   (16 bits)>|<cell|>>|<row|<cell|10010>|<cell|K>|<cell|>|<cell|lb>|<cell|<math|R\<leftarrow\>mem<around*|(|R<rprime|'>+d|)>>
   (8 bits)>|<cell|>>|<row|<cell|10011>|<cell|K>|<cell|>|<cell|sb>|<cell|<math|mem<around*|(|R<rprime|'>+d|)>\<leftarrow\>R>
@@ -132,7 +132,7 @@
   (8 bits)>|<cell|>>|<row|<cell|10111>|<cell|R>|<cell|*>|<cell|sbr>|<cell|<math|mem<around*|(|R<rsub|A>+R<rsub|B>|)>\<leftarrow\>R>
   (8 bits)>|<cell|>>|<row|<cell|11000>|<cell|I>|<cell|>|<cell|lil>|<cell|<math|R<rsub|lo>\<leftarrow\>d>>|<cell|>>|<row|<cell|11001>|<cell|I>|<cell|>|<cell|lilz>|<cell|<math|R<rsub|lo>\<leftarrow\>d
   ; R<rsub|hi>\<leftarrow\>0>>|<cell|>>|<row|<cell|11010>|<cell|I>|<cell|>|<cell|liu>|<cell|<math|R<rsub|hi>\<leftarrow\>d>>|<cell|>>|<row|<cell|11011>|<cell|I>|<cell|>|<cell|liuz>|<cell|<math|R<rsub|hi>\<leftarrow\>d
-  ; R<rsub|lo>\<leftarrow\>0>>|<cell|>>|<row|<cell|11100>|<cell|>|<cell|>|<cell|>|<cell|>|<cell|>>|<row|<cell|11101>|<cell|>|<cell|>|<cell|>|<cell|>|<cell|>>|<row|<cell|11110>|<cell|>|<cell|>|<cell|>|<cell|>|<cell|>>|<row|<cell|11111>|<cell|>|<cell|>|<cell|<samp|>>|<cell|>|<cell|>>>>>|Instructions
+  ; R<rsub|lo>\<leftarrow\>0>>|<cell|>>|<row|<cell|11100>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|11101>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|11110>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|11111>|<cell|>|<cell|>|<cell|nop<samp|>>|<cell|<math|\<varnothing\>>>|<cell|>>>>>|Instructions
   reconnues par le microproceseur>
 
   <big-table|<tabular|<tformat|<cwith|1|1|1|-1|cell-bborder|1px>|<table|<row|<cell|<strong|Nom>>|<cell|<strong|Action>>|<cell|<strong|Code
@@ -182,11 +182,13 @@
 <\auxiliary>
   <\collection>
     <\associate|table>
+      <tuple|normal|Memory map|<pageref|auto-3>>
+
       <tuple|normal|Instructions reconnues par le
-      microproceseur|<pageref|auto-11>>
+      microproceseur|<pageref|auto-12>>
 
       <tuple|normal|Instructions supplémentaires (produites par
-      l'assembleur)|<pageref|auto-12>>
+      l'assembleur)|<pageref|auto-13>>
     </associate>
     <\associate|toc>
       <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|Registres>
@@ -199,35 +201,35 @@
 
       <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|Jeu
       d'instruction> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-3><vspace|0.5fn>
+      <no-break><pageref|auto-4><vspace|0.5fn>
 
       <with|par-left|<quote|1.5fn>|Types d'instructions
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-4>>
+      <no-break><pageref|auto-5>>
 
       <with|par-left|<quote|6fn>|Format de base
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-5><vspace|0.15fn>>
+      <no-break><pageref|auto-6><vspace|0.15fn>>
 
       <with|par-left|<quote|6fn>|Format <with|mode|<quote|math>|R>
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-6><vspace|0.15fn>>
+      <no-break><pageref|auto-7><vspace|0.15fn>>
 
       <with|par-left|<quote|6fn>|Format <with|mode|<quote|math>|I>
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-7><vspace|0.15fn>>
+      <no-break><pageref|auto-8><vspace|0.15fn>>
 
       <with|par-left|<quote|6fn>|Format K
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-8><vspace|0.15fn>>
+      <no-break><pageref|auto-9><vspace|0.15fn>>
 
       <with|par-left|<quote|6fn>|Format <with|mode|<quote|math>|J>
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-9><vspace|0.15fn>>
+      <no-break><pageref|auto-10><vspace|0.15fn>>
 
       <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|Tableau
       d'instructions> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-10><vspace|0.5fn>
+      <no-break><pageref|auto-11><vspace|0.5fn>
     </associate>
   </collection>
 </auxiliary>
