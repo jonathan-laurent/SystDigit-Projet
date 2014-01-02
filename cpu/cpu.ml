@@ -45,24 +45,24 @@ let cpu_get_reg i =
     let a03 = mux (i ** 0) r6 r7 in
     let a10 = mux (i ** 1) a00 a01 in
     let a11 = mux (i ** 1) a02 a03 in
-    mux (i ** 3) a10 a00
+    mux (i ** 2) a10 a00
 
 let save_cpu_regs wr wd =
-    let r1_prev = reg 16 r1 in
-    let r2_prev = reg 16 r2 in
-    let r3_prev = reg 16 r3 in
-    let r4_prev = reg 16 r4 in
-    let r5_prev = reg 16 r5 in
-    let r6_prev = reg 16 r6 in
-    let r7_prev = reg 16 r7 in
+    let next_r1 = mux (eq_c 3 wr 1) r1 wd in
+    let next_r2 = mux (eq_c 3 wr 2) r2 wd in
+    let next_r3 = mux (eq_c 3 wr 3) r3 wd in
+    let next_r4 = mux (eq_c 3 wr 4) r4 wd in
+    let next_r5 = mux (eq_c 3 wr 5) r5 wd in
+    let next_r6 = mux (eq_c 3 wr 6) r6 wd in
+    let next_r7 = mux (eq_c 3 wr 7) r7 wd in
 
-    save_r1 (mux (eq_c 3 wr 1) r1_prev wd) ^.
-    save_r2 (mux (eq_c 3 wr 2) r1_prev wd) ^.
-    save_r3 (mux (eq_c 3 wr 3) r1_prev wd) ^.
-    save_r4 (mux (eq_c 3 wr 4) r1_prev wd) ^.
-    save_r5 (mux (eq_c 3 wr 5) r1_prev wd) ^.
-    save_r6 (mux (eq_c 3 wr 6) r1_prev wd) ^.
-    save_r7 (mux (eq_c 3 wr 7) r1_prev wd) ^.
+    save_r1 (reg 16 next_r1) ^.
+    save_r2 (reg 16 next_r2) ^.
+    save_r3 (reg 16 next_r3) ^.
+    save_r4 (reg 16 next_r4) ^.
+    save_r5 (reg 16 next_r5) ^.
+    save_r6 (reg 16 next_r6) ^.
+    save_r7 (reg 16 next_r7) ^.
     r0
 
 (*
@@ -118,6 +118,10 @@ let rl, rh, i, ex, exf, pc =
     let wr = zeroes 3 in
     let rwd = zeroes 16 in
 
+    (* instruction : incri *)
+    let instr_incri = exec ^& eq_c 5 i_i 0b00110 in
+    let wr = mux instr_incri wr i_r in 
+    let rwd = mux instr_incri rwd (nadder_nocarry 16 v_r (sign_extend 8 16 i_id)) in
     (* instruction : j *)
     let instr_j = exec ^& eq_c 5 i_i 0b01000 in
     let next_pc = mux instr_j next_pc (nadder_nocarry 16 pc (sign_extend 11 16 i_jd)) in

@@ -140,8 +140,8 @@
   <math|PC\<leftarrow\>R<rsub|>>>|<cell|non
   signé>>|<row|<cell|01100>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|01101>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|01110>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|01111>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|10000>|<cell|K>|<cell|>|<cell|lw>|<cell|<math|R\<leftarrow\>mem<around*|(|R<rprime|'>+d|)>>
   (16 bits)>|<cell|>>|<row|<cell|10001>|<cell|K>|<cell|>|<cell|sw>|<cell|<math|mem<around*|(|R<rprime|'>+d|)>\<leftarrow\>R>
-  (16 bits)>|<cell|>>|<row|<cell|10010>|<cell|K>|<cell|>|<cell|lb>|<cell|<math|R\<leftarrow\>mem<around*|(|R<rprime|'>+d|)>>
-  (8 bits)>|<cell|>>|<row|<cell|10011>|<cell|K>|<cell|>|<cell|sb>|<cell|<math|mem<around*|(|R<rprime|'>+d|)>\<leftarrow\>R>
+  (16 bits)>|<cell|>>|<row|<cell|10010>|<cell|K>|<cell|>|<cell|lb>|<cell|<math|R<rsub|lo>\<leftarrow\>mem<around*|(|R<rprime|'>+d|)>
+  ; R<rsub|hi>\<leftarrow\>0> (8 bits)>|<cell|>>|<row|<cell|10011>|<cell|K>|<cell|>|<cell|sb>|<cell|<math|mem<around*|(|R<rprime|'>+d|)>\<leftarrow\>R<rsub|lo>>
   (8 bits)>|<cell|>>|<row|<cell|10100>|<cell|R>|<cell|*>|<cell|lwr>|<cell|<math|R\<leftarrow\>mem<around*|(|R<rsub|A>+R<rsub|B>|)>>
   (16 bits)>|<cell|>>|<row|<cell|10101>|<cell|R>|<cell|*>|<cell|swr>|<cell|<math|mem<around*|(|R<rsub|A>+R<rsub|B>|)>\<leftarrow\>R>
   (16 bits)>|<cell|>>|<row|<cell|10110>|<cell|R>|<cell|*>|<cell|lbr>|<cell|<math|R\<leftarrow\>mem<around*|(|R<rsub|A>+R<rsub|B>|)>>
