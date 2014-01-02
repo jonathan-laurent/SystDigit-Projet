@@ -95,8 +95,13 @@ let rl, rh, i, ex, exf, pc =
     let ra = mux read_ihi ra (nadder_nocarry 16 pc (one 16)) in
     let ihi = mux read_ihi (zeroes 8) ram_read in
 
-    let exec = ignore (save_next_read_ihi read_ilow) read_ihi in
-    let i = ilow ++ ihi in
+    let read_ilow = save_next_read_ihi read_ilow in
+    (* When execution has just been read, exec is true, and exec is false the rest of the time *)
+    let exec = read_ihi in
+    (* Keep same instruction in register until new instruction is read *)
+    let si, save_i = loop 16 in
+    let i = mux exec (reg 16 si) (ilow ++ ihi) in
+    let i = save_i i in
 
     (* Execute instruction if exec is set *)
     let next_pc = nadder_nocarry 16 pc (two 16) in
@@ -127,9 +132,20 @@ let rl, rh, i, ex, exf, pc =
     let next_pc = mux instr_j next_pc (nadder_nocarry 16 pc (sign_extend 11 16 i_jd)) in
     (* instruction : jal *)
     let instr_jal = exec ^& eq_c 5 i_i 0b01001 in
-    let wr = mux instr_jal wr (const "011") in
-    let rwd = mux instr_jal rwd next_pc in
     let next_pc = mux instr_jal next_pc (nadder_nocarry 16 pc (sign_extend 11 16 i_jd)) in
+    let instr_jalxx = instr_jal in
+    (* instruction : jr/jalr/jer/jner/jltr/jler/jltru/ljeru *)
+    let instr_jxxr = exec ^& eq_c 4 (i_i % (1, 4)) 0b0101 in
+    let f0 = i_i ** 0 in
+    let instr_jr = (not f0) ^& (eq_c 2 i_f 0) in
+    let instr_jalr = (not f0) ^& (eq_c 2 i_f 1) in
+    let instr_jalxx = instr_jalxx ^| (instr_jxxr ^& instr_jalr) in
+    let cond_jxxr = instr_jxxr ^& (alu_comparer 16 f0 i_f v_ra v_rb ^| instr_jr ^| instr_jalr) in
+    let next_pc = mux cond_jxxr next_pc v_r in
+    
+    (* prologue for jal/jalr *)
+    let wr = mux instr_jalxx wr (const "011") in
+    let rwd = mux instr_jalxx rwd next_pc in
 
     save_cpu_regs wr rwd ^.
     save_ram_read (cpu_ram ra we wa d) ^.

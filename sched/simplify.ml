@@ -136,6 +136,14 @@ let arith_simplify p =
       | Ebinop(Xor, Aconst([|false|]), x) -> Earg(x)
       | Ebinop(Xor, x, Aconst([|false|])) -> Earg(x)
 
+      | Ebinop(Nand, Avar(a), Avar(b)) when a = b ->
+        Enot(Avar(a))
+      | Ebinop(Xor, Avar(a), Avar(b)) when a = b ->
+        let sz = Env.find a p.p_vars in
+        Earg(Aconst(Array.make sz false))
+      | Ebinop(_, Avar(a), Avar(b)) when a = b ->
+        Earg(Avar(a))
+
       | Eslice(i, j, k) when i = j -> Eselect(i, k)
 
       | Econcat(Aconst(a), Aconst(b)) ->
