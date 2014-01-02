@@ -45,6 +45,20 @@
 
   La mémoire est adressée sur 16 bits, il y a donc 64ko disponnibles.
 
+  <subsection|Modèle simple>
+
+  On définit plusieurs zones de mémoire :
+
+  <big-table|<tabular*|<tformat|<table|<row|<cell|0x0000 - 0x3FFF>|<cell|MMIO
+  (seuls quelques octets seront utilisés)>>|<row|<cell|0x4000 -
+  0x7FFF>|<cell|ROM pour programme utilisateur>>|<row|<cell|0x8000 -
+  0xFFFF>|<cell|RAM pour programme utilisateur>>>>>|Memory map>
+
+  <subsection|Modèle avec affichage bitmapé>
+
+  <em|De moins en moins de chances d'être implémenté... mais ça n'a rien
+  d'impossible.>
+
   On définit plusieurs zones de mémoire :
 
   <big-table|<tabular*|<tformat|<table|<row|<cell|0x0000 - 0x2FFF>|<cell|VGA
@@ -56,7 +70,7 @@
   utilisateur>>>>>|Memory map>
 
   Les 0x3000 (12288) octets de mémoire pour le VGA correspondent à un
-  affichage bitmappé 336x288 noir et blanc (un octet représente 8 pixels), ce
+  affichage bitmapé 336x288 noir et blanc (un octet représente 8 pixels), ce
   qui fait avec une police d'écriture 8x8 un affichage texte possible en
   42x36.
 
@@ -164,18 +178,21 @@
 <\references>
   <\collection>
     <associate|auto-1|<tuple|1|1>>
-    <associate|auto-10|<tuple|5|1>>
-    <associate|auto-11|<tuple|4|2>>
-    <associate|auto-12|<tuple|2|3>>
-    <associate|auto-13|<tuple|3|?>>
+    <associate|auto-10|<tuple|2|1>>
+    <associate|auto-11|<tuple|3|2>>
+    <associate|auto-12|<tuple|4|3>>
+    <associate|auto-13|<tuple|5|?>>
+    <associate|auto-14|<tuple|4|?>>
+    <associate|auto-15|<tuple|3|?>>
+    <associate|auto-16|<tuple|4|?>>
     <associate|auto-2|<tuple|2|1>>
-    <associate|auto-3|<tuple|1|1>>
-    <associate|auto-4|<tuple|3|1>>
-    <associate|auto-5|<tuple|3.1|1>>
-    <associate|auto-6|<tuple|1|1>>
-    <associate|auto-7|<tuple|2|1>>
-    <associate|auto-8|<tuple|3|1>>
-    <associate|auto-9|<tuple|4|1>>
+    <associate|auto-3|<tuple|2.1|1>>
+    <associate|auto-4|<tuple|1|1>>
+    <associate|auto-5|<tuple|2.2|1>>
+    <associate|auto-6|<tuple|2|1>>
+    <associate|auto-7|<tuple|3|1>>
+    <associate|auto-8|<tuple|3.1|1>>
+    <associate|auto-9|<tuple|1|1>>
   </collection>
 </references>
 

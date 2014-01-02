@@ -2,118 +2,181 @@ open Netlist_ast
 
 (* module Idm = Map.Make (String) *)
 module Idm = Env
+(*module Imap = Map.Make(struct type t = int let compare = compare end)*)
+module Iset = Set.Make (struct type t = int let compare = compare end)
+
+type res =
+    | Arg of (arg * int)
+    | Calc of (Iset.t -> equation list -> int Idm.t ->
+        arg * int * equation list * int Idm.t)
 
 type calc =
-    | Id of (ident * int)
-    | Eq of (equation list -> int Idm.t -> arg * int * equation list * int Idm.t)
-    | Const of (bool array)
+    unit -> res ref
 
 let id =
     let cnt = ref 0 in
-    fun n -> 
-        let res = n ^ "_xoxo_" ^ (string_of_int !cnt) in
+    fun s -> 
+        let res = s ^ "_xoxo_" ^ (string_of_int !cnt) in
         incr cnt; res
+
+let id2 =
+    let cnt = ref 0 in
+    fun () ->
+        let v = !cnt in incr cnt; v
 
 let value n =
     let l = String.length n in
-    ref (Const (Array.init l (fun i -> n.[i] = '1')))
+    let v = Array.init l (fun i -> n.[i] = '1') in
+    let res = ref (Arg (Aconst v,l)) in
+    fun () -> res
     
-let calc eqs vars e =
-    match !e with
-    | Id (id,t) -> Avar id,t,eqs,vars
-    | Eq c ->
-        let arg,t,eqs,vars = c eqs vars in
-        let () = 
-            match arg with
-            | Avar id -> e := Id (id,t)
-            | Aconst v -> e := Const v in
-        arg,t,eqs,vars
-    | Const v -> Aconst v,(Array.length v),eqs,vars
- 
+let calc ids eqs vars e =
+    let res = e () in
+    match !res with
+    | Calc c -> 
+        let a,t,eqs,vars = c ids eqs vars in
+        ( res := Arg (a,t); a, t, eqs, vars )
+    | Arg (a,t) -> a,t,eqs,vars
+
+(*let calc_rec t ids eqs vars e =
+    let res,ide = e () in
+    try let id,_ = Imap.find ide ids in
+        Avar id, t, eqs, vars, ids
+    with Not_found ->
+        match !res with
+        | Calc c ->
+            let id = id "" in
+            let a,t,eqs,vars = c (Imap.add ide (id,t) ids) eqs vars in
+            ( res := Arg (a,t); a, t, eqs, vars )
+        | Arg (a,t) -> a,t,eqs,vars*)
+
 let ( ++ ) a b =
-    ref (Eq (fun eqs vars ->
-        let arga,ta,eqs,vars = calc eqs vars a in
-        let argb,tb,eqs,vars = calc eqs vars b in
-        let res = id "" in
-        Avar res, (ta+tb), (res,Econcat (arga, argb))::eqs, Idm.add res (ta+tb) vars))
+    let res = ref (Calc (
+        fun ids eqs vars ->
+            let arga,ta,eqs,vars = calc ids eqs vars a in
+            let argb,tb,eqs,vars = calc ids eqs vars b in
+            let res = id "" in
+            Avar res, (ta+tb), (res,Econcat (arga, argb))::eqs, 
+                Idm.add res (ta+tb) vars)) in
+    fun () -> res
         
-let ( ^^ ) a b = ref (Eq (fun eqs vars ->
-    let arga,ta,eqs,vars = calc eqs vars a in
-    let argb,tb,eqs,vars = calc eqs vars b in
-    if ta = tb then
-        let res = id "" in 
-        Avar res, (ta), (res,Ebinop (Xor,arga, argb))::eqs, Idm.add res (ta) vars
-    else assert false))
+let ( ^^ ) a b =
+    let res = ref (Calc (
+        fun ids eqs vars ->
+            let arga,ta,eqs,vars = calc ids eqs vars a in
+            let argb,tb,eqs,vars = calc ids eqs vars b in
+            if ta = tb then
+                let res = id "" in 
+                Avar res, (ta), (res,Ebinop (Xor,arga, argb))::eqs, Idm.add res (ta) vars
+            else assert false)) in
+    fun () -> res
     
-let ( ^| ) a b = ref (Eq (fun eqs vars ->
-    let arga,ta,eqs,vars = calc eqs vars a in
-    let argb,tb,eqs,vars = calc eqs vars b in
-    if ta = tb then
-        let res = id "" in 
-        Avar res, (ta), (res,Ebinop (Or,arga, argb))::eqs, Idm.add res (ta) vars
-    else assert false))
+let ( ^| ) a b =
+    let res = ref (Calc (
+        fun ids eqs vars ->
+            let arga,ta,eqs,vars = calc ids eqs vars a in
+            let argb,tb,eqs,vars = calc ids eqs vars b in
+            if ta = tb then
+                let res = id "" in 
+                Avar res, (ta), (res,Ebinop (Or,arga, argb))::eqs, Idm.add res (ta) vars
+            else assert false)) in
+    fun () -> res
     
-let ( ^& ) a b = ref (Eq (fun eqs vars ->
-    let arga,ta,eqs,vars = calc eqs vars a in
-    let argb,tb,eqs,vars = calc eqs vars b in
-    if ta = tb then
-        let res = id "" in 
-        Avar res, (ta), (res,Ebinop (And,arga, argb))::eqs, Idm.add res (ta) vars
-    else assert false))
+let ( ^& ) a b =
+    let res = ref (Calc (fun ids eqs vars ->
+        let arga,ta,eqs,vars = calc ids eqs vars a in
+        let argb,tb,eqs,vars = calc ids eqs vars b in
+        if ta = tb then
+            let res = id "" in 
+            Avar res, (ta), (res,Ebinop (And,arga, argb))::eqs, Idm.add res (ta) vars
+        else assert false)) in
+    fun () -> res
 
-let ( ^$ ) a b = ref (Eq (fun eqs vars ->
-    let arga,ta,eqs,vars = calc eqs vars a in
-    let argb,tb,eqs,vars = calc eqs vars b in
-    if ta = tb then
-        let res = id "" in 
-        Avar res, (ta), (res,Ebinop (Nand,arga, argb))::eqs, Idm.add res (ta) vars
-    else assert false))
+let ( ^$ ) a b =
+    let res = ref (Calc (fun ids eqs vars ->
+        let arga,ta,eqs,vars = calc ids eqs vars a in
+        let argb,tb,eqs,vars = calc ids eqs vars b in
+        if ta = tb then
+            let res = id "" in 
+            Avar res, (ta), (res,Ebinop (Nand,arga, argb))::eqs, Idm.add res (ta) vars
+        else assert false)) in
+    fun () -> res
 
-let not a = ref (Eq (fun eqs vars ->
-    let arga,ta,eqs,vars = calc eqs vars a in
-    let res = id "" in
-    Avar res, ta, (res,Enot arga)::eqs, Idm.add res ta vars))
-    
-let mux a b c = ref (Eq (fun eqs vars ->
-    let arga,ta,eqs,vars = calc eqs vars a in
-    let argb,tb,eqs,vars = calc eqs vars b in
-    let argc,tc,eqs,vars = calc eqs vars c in
-    if ta = 1 && tb = tc then
+let not a =
+    let res = ref (Calc (fun ids eqs vars ->
+        let arga,ta,eqs,vars = calc ids eqs vars a in
         let res = id "" in
-        Avar res, tb, (res,Emux (arga,argb,argc))::eqs, Idm.add res tb vars
-    else assert false))
+        Avar res, ta, (res,Enot arga)::eqs, Idm.add res ta vars)) in
+    fun () -> res
+    
+let mux a b c =
+    let res = ref (Calc (fun ids eqs vars ->
+        let arga,ta,eqs,vars = calc ids eqs vars a in
+        let argb,tb,eqs,vars = calc ids eqs vars b in
+        let argc,tc,eqs,vars = calc ids eqs vars c in
+        if ta = 1 && tb = tc then
+            let res = id "" in
+            Avar res, tb, (res,Emux (arga,argb,argc))::eqs, Idm.add res tb vars
+        else assert false)) in
+    fun () -> res
 
-let ( ** ) a n = ref (Eq (fun eqs vars ->
-    let arga,ta,eqs,vars = calc eqs vars a in
-    if n >= ta then assert false
-    else if ta = 1 then arga,ta,eqs,vars
-    else let res = id "" in
-        Avar res, 1, (res,Eselect (n,arga))::eqs, Idm.add res 1 vars))
+let ( ** ) a n =
+    let res = ref (Calc (fun ids eqs vars ->
+        let arga,ta,eqs,vars = calc ids eqs vars a in
+        if n >= ta then assert false
+        else if ta = 1 then arga,ta,eqs,vars
+        else let res = id "" in
+            Avar res, 1, (res,Eselect (n,arga))::eqs, Idm.add res 1 vars)) in
+    fun () -> res
 
-let ( % ) a (i,j) = ref (Eq (fun eqs vars ->
-    let arga,ta,eqs,vars = calc eqs vars a in
-    if j > ta then assert false
-    else if i > j then assert false
-    else if j-i+1 = ta then arga,ta,eqs,vars
-    else let res = id "" in
-        Avar res, (j-i+1), (res,Eslice (i,j,arga))::eqs, Idm.add res (j-i+1) vars))
+let ( % ) a (i,j) =
+    let res = ref (Calc (fun ids eqs vars ->
+        let arga,ta,eqs,vars = calc ids eqs vars a in
+        if j > ta then assert false
+        else if i > j then assert false
+        else if j-i+1 = ta then arga,ta,eqs,vars
+        else let res = id "" in
+            Avar res, (j-i+1), (res,Eslice (i,j,arga))::eqs,
+                Idm.add res (j-i+1) vars)) in
+    fun () -> res
 
-let rom name a_s w_s a = ref (Eq (fun eqs vars ->
-    let arga,ta,eqs,vars = calc eqs vars a in
-    if ta = a_s && w_s > 0 then
-        let res = id name in
-        Avar res, w_s, (res,Erom (a_s,w_s,arga))::eqs, Idm.add res w_s vars
-    else assert false))
+let rom prefix a_s w_s a =
+    let res = ref (Calc (fun ids eqs vars ->
+        let arga,ta,eqs,vars = calc ids eqs vars a in
+        if ta = a_s && w_s > 0 then
+            let res = id prefix in
+            Avar res, w_s, (res,Erom (a_s,w_s,arga))::eqs, Idm.add res w_s vars
+        else assert false)) in
+    fun () -> res
 
-let ram a_s w_s ra we wa d = ref (Eq (fun eqs vars ->
-    let argra,tra,eqs,vars = calc eqs vars ra in
-    let argwe,twe,eqs,vars = calc eqs vars we in
-    let argwa,twa,eqs,vars = calc eqs vars wa in
-    let argd,td,eqs,vars = calc eqs vars d in
-    if tra = a_s && twa = a_s && td = w_s && twe = 1 then
-        let res = id "" in
-        Avar res, w_s, (res,Eram (a_s,w_s,argra,argwe,argwa,argd))::eqs, Idm.add res w_s vars
-    else assert false))
+let ram a_s w_s ra we wa = 
+    let id2 = id2 () in
+    let id = id "" in
+    fun d ->
+    let res = ref (Calc (fun ids eqs vars ->
+        if Iset.mem id2 ids then Avar id, w_s, eqs, vars
+        else let argra,tra,eqs,vars = calc ids eqs vars ra in
+        let ids = Iset.add id2 ids in
+        let argwe,twe,eqs,vars = calc ids eqs vars we in
+        let argwa,twa,eqs,vars = calc ids eqs vars wa in
+        let argd,td,eqs,vars = calc ids eqs vars d in
+        if tra = a_s && twa = a_s && td = w_s && twe = 1 then
+            Avar id, w_s, (id,Eram (a_s,w_s,argra,argwe,argwa,argd))::eqs, Idm.add id w_s vars
+        else assert false)) in
+    fun () -> res
+
+let reg n =
+    let id2 = id2 () in
+    let id = id "" in fun a ->
+    let res = ref (Calc (fun ids eqs vars ->
+        if Iset.mem id2 ids then Avar id, n, eqs, vars
+        else let arga,ta,eqs,vars = calc (Iset.add id2 ids) eqs vars a in
+            if ta = n then
+                match arga with
+                | Avar id' -> Avar id, n, (id,Ereg id')::eqs, Idm.add id n vars
+                | _ -> assert false
+            else assert false)) in
+    fun () -> res
 
 let init_string n f =
     let s = String.make n 'a' in

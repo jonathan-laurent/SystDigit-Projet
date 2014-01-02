@@ -1,4 +1,4 @@
-type t
+type t = unit -> Netlist_proc.res ref
 
 val print : out_channel -> Netlist_ast.program -> unit
 
@@ -22,6 +22,8 @@ val ( % ) : t -> int * int -> t (* slice *)
 val rom : string -> int -> int -> t -> t
 
 val ram : int -> int -> t -> t -> t -> t -> t
+
+val reg : int -> t -> t
 
 val main_0_1 : t -> Netlist_ast.program
 val main_0_2 : t * t -> Netlist_ast.program
