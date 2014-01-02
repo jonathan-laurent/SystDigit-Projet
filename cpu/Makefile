@@ -1,10 +1,12 @@
 .SECONDARY:
 
-GENERATOR=netlist_ast.ml netlist_gen.ml netlist_gen.mli netlist_proc.ml
+GENERATOR=netlist_ast.ml netlist_gen.ml netlist_gen.mli 
 AUXILLARY=alu.ml
 
 SCHED=../sched/main.byte
 SIM=../csim/csim
+
+all: cpu_opt.sim
 
 %.sim: _build/%.dumb
 	$(SIM) $<
@@ -12,10 +14,10 @@ SIM=../csim/csim
 _build/%.dumb _build/%.snet _build/%_opt.dumb _build/%_opt.snet: _build/%.net
 	$(SCHED) $<
 
-_build/%.net: _build/%.byte
+_build/%.net: _build/%.native
 	./$< > $@
 
-_build/%.byte: $(GENERATOR) $(AUXILLARY) %.ml
+_build/%.native: $(GENERATOR) $(AUXILLARY) %.ml
 	ocamlbuild `basename $@`
 	# remove stupid symbolic link
 	rm `basename $@`

@@ -3,13 +3,17 @@ open Netlist_gen
 (* Dumb CPU that just does an 8-bit addition *)
 
 let sumz n i =
-    let rec res =
-        let aux = reg n in
-        fun () -> fst (Alu.nadder n i (aux res) (value "0")) ()
-    in
-       res
+    let x, set_x = loop n in
+    let r = reg n x in
+    let o1, o2 = Alu.nadder n i r (const "0") in
+    set_x o1, o2
 
 let p = 
-    main_1_1 (sumz 8) 8
+    let width = 16 in
+    let sum, r = sumz width (get "in") in
+    program
+        [   "in", width ]
+        [   "out", width, sum;
+            "r", 1, r ]
 
-let () = Netlist_proc.print stdout p
+let () = Netlist_gen.print stdout p
