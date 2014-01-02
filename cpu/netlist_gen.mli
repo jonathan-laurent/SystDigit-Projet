@@ -7,6 +7,9 @@ val id : string -> Netlist_ast.ident
 val get : Netlist_ast.ident -> t
 val loop : int -> (t * (t -> t))
 
+val ignore: t -> t -> t (* ignores first value *)
+val ( ^. ) : t -> t -> t (* ignores first value *)
+
 val const : string -> t
 
 val ( ++ ) : t -> t -> t (* concat *)
@@ -25,8 +28,10 @@ val ( ** ) : t -> int -> t (* select *)
 val ( % ) : t -> int * int -> t (* slice *)
 
 val rom : string -> int -> int -> t -> t
+    (* addr_size, word_size, read_addr *)
 
 val ram : int -> int -> t -> t -> t -> t -> t
+    (* addr_size, word_size, read_addr, write_enable, write_addr, data *)
 
 val reg : int -> t -> t
 

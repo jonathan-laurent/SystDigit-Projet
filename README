@@ -228,12 +228,16 @@ decode7_128, and use the ROM data from the file specified on the command line.
 
 The format of a ROM file is as follows :
 
-<address width> <word size>
+<number of words defined> <word size>
 <data>
 
-The data is composed of 2^(address width) values separated by spaces. If they
-have no prefix, they are read as binary. If they have a / prefix, they are read
-as decimal (this enables the use of whichever representation is preferred).
+The data is composed of n values separated by spaces. If they have no prefix,
+they are read as binary. If they have a / prefix, they are read as decimal. If
+they have a x prefix, they are read as hexadecimal (this enables the use of
+whichever representation is preferred).
+
+When the ROM is used, all the extra words (those needed by the simulator but
+not defined in the ROM file) will be considered zeroes.
 
 
 

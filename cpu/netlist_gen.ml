@@ -15,12 +15,8 @@ let get_size p arg = match arg with
 let add p id eq size =
     assert (not (Env.mem id p.p_vars) 
         || (Env.find id p.p_vars = size));
-    let new_eqs = 
-        if List.mem_assoc id p.p_eqs
-            then p.p_eqs
-            else (id, eq)::p.p_eqs
-    in
-    {   p_eqs = new_eqs;
+    assert (not (List.mem_assoc id p.p_eqs));
+    {   p_eqs = (id, eq)::p.p_eqs;
         p_inputs = p.p_inputs;
         p_outputs = p.p_outputs;
         p_vars = Env.add id size p.p_vars }
@@ -40,8 +36,16 @@ let loop s =
             p_vars = Env.add i s p.p_vars }),
     (fun v1 ->
         fun p ->
-            let x, p = v1 p in
-            (Avar i), add p i (Earg x) s)
+            (Avar i),
+            (if List.mem_assoc i p.p_eqs then p else
+                let x, p = v1 p in 
+                add p i (Earg x) s))
+            
+let ignore v1 v2 =
+    fun p ->
+        let v1, p = v1 p in
+        v2 p
+let ( ^. ) v1 v2 = ignore v1 v2
 
 let const n =
     let l = String.length n in
@@ -52,111 +56,123 @@ let const n =
 let ( ++ ) v1 v2 =
     let i = id "" in
     fun p ->
-        let x1, p = v1 p in
-        let x2, p = v2 p in
-        let sz1, sz2 = get_size p x1, get_size p x2 in
-        (Avar i), add p i (Econcat (x1, x2)) (sz1 + sz2)
+        if List.mem_assoc i p.p_eqs then Avar i, p else
+            let x1, p = v1 p in
+            let x2, p = v2 p in
+            let sz1, sz2 = get_size p x1, get_size p x2 in
+            (Avar i), add p i (Econcat (x1, x2)) (sz1 + sz2)
     
 let ( ^| ) v1 v2 =
     let i = id "" in
     fun p ->
-        let x1, p = v1 p in
-        let x2, p = v2 p in
-        let sz = get_size p x1 in
-        assert (sz = get_size p x2);
-        (Avar i), add p i (Ebinop (Or, x1, x2)) sz
+        if List.mem_assoc i p.p_eqs then Avar i, p else
+            let x1, p = v1 p in
+            let x2, p = v2 p in
+            let sz = get_size p x1 in
+            assert (sz = get_size p x2);
+            (Avar i), add p i (Ebinop (Or, x1, x2)) sz
 
 let ( ^^ ) v1 v2 =
     let i = id "" in
     fun p ->
-        let x1, p = v1 p in
-        let x2, p = v2 p in
-        let sz = get_size p x1 in
-        assert (sz = get_size p x2);
-        (Avar i), add p i (Ebinop (Xor, x1, x2)) sz
+        if List.mem_assoc i p.p_eqs then Avar i, p else
+            let x1, p = v1 p in
+            let x2, p = v2 p in
+            let sz = get_size p x1 in
+            assert (sz = get_size p x2);
+            (Avar i), add p i (Ebinop (Xor, x1, x2)) sz
 
 let ( ^& ) v1 v2 =
     let i = id "" in
     fun p ->
-        let x1, p = v1 p in
-        let x2, p = v2 p in
-        let sz = get_size p x1 in
-        assert (sz = get_size p x2);
-        (Avar i), add p i (Ebinop (And, x1, x2)) sz
+        if List.mem_assoc i p.p_eqs then Avar i, p else
+            let x1, p = v1 p in
+            let x2, p = v2 p in
+            let sz = get_size p x1 in
+            assert (sz = get_size p x2);
+            (Avar i), add p i (Ebinop (And, x1, x2)) sz
 
 let ( ^$ ) v1 v2 =
     let i = id "" in
     fun p ->
-        let x1, p = v1 p in
-        let x2, p = v2 p in
-        let sz = get_size p x1 in
-        assert (sz = get_size p x2);
-        (Avar i), add p i (Ebinop (Nand, x1, x2)) sz
+        if List.mem_assoc i p.p_eqs then Avar i, p else
+            let x1, p = v1 p in
+            let x2, p = v2 p in
+            let sz = get_size p x1 in
+            assert (sz = get_size p x2);
+            (Avar i), add p i (Ebinop (Nand, x1, x2)) sz
 
 let not v1 =
     let i = id "" in
     fun p ->
-        let x, p = v1 p in
-        (Avar i), add p i (Enot (x)) (get_size p x)
+        if List.mem_assoc i p.p_eqs then Avar i, p else
+            let x, p = v1 p in
+            (Avar i), add p i (Enot (x)) (get_size p x)
 
 let mux v1 v2 v3 =
     let i = id "" in
     fun p ->
-        let x1, p = v1 p in
-        let x2, p = v2 p in
-        let x3, p = v3 p in
-        let sz = get_size p x2 in
-        assert (get_size p x3 = sz);
-        assert (get_size p x1 = 1);
-        (Avar i), add p i (Emux (x1, x2, x3)) sz
+        if List.mem_assoc i p.p_eqs then Avar i, p else
+            let x1, p = v1 p in
+            let x2, p = v2 p in
+            let x3, p = v3 p in
+            let sz = get_size p x2 in
+            assert (get_size p x3 = sz);
+            assert (get_size p x1 = 1);
+            (Avar i), add p i (Emux (x1, x2, x3)) sz
 
 let ( ** ) v s =
     let i = id "" in
     fun p ->
-        let x, p = v p in
-        let sz = get_size p x in
-        assert (s >= 0 && s < sz);
-        (Avar i), add p i (Eselect (s, x)) 1
+        if List.mem_assoc i p.p_eqs then Avar i, p else
+            let x, p = v p in
+            let sz = get_size p x in
+            assert (s >= 0 && s < sz);
+            (Avar i), add p i (Eselect (s, x)) 1
 
 let ( % ) v (s1, s2) =
     let i = id "" in
     fun p ->
-        let x, p = v p in
-        let sz = get_size p x in
-        assert (s1 >= 0 && s2 >= s1 && sz > s2);
-        (Avar i), add p i (Eslice (s1, s2, x)) (s2 - s1 + 1)
+        if List.mem_assoc i p.p_eqs then Avar i, p else
+            let x, p = v p in
+            let sz = get_size p x in
+            assert (s1 >= 0 && s2 >= s1 && sz > s2);
+            (Avar i), add p i (Eslice (s1, s2, x)) (s2 - s1 + 1)
 
 let rom i a_s w_s ra =
     let i = id i in
     fun p ->
-        let ra, p = ra p in
-        assert ((get_size p ra) = a_s);
-        (Avar i), add p i (Erom (a_s, w_s, ra)) w_s
+        if List.mem_assoc i p.p_eqs then Avar i, p else
+            let ra, p = ra p in
+            assert ((get_size p ra) = a_s);
+            (Avar i), add p i (Erom (a_s, w_s, ra)) w_s
 
 let ram a_s w_s ra we wa d =
     let i = id "" in
     fun p ->
-        let ra, p = ra p in
-        let we, p = we p in
-        let wa, p = wa p in
-        let d, p = d p in
-        assert ((get_size p ra) = a_s);
-        assert ((get_size p wa) = a_s);
-        assert ((get_size p we) = 1);
-        assert ((get_size p d) = w_s);
-        (Avar i), add p i (Eram (a_s, w_s, ra, we, wa, d)) w_s
+        if List.mem_assoc i p.p_eqs then Avar i, p else
+            let ra, p = ra p in
+            let we, p = we p in
+            let wa, p = wa p in
+            let d, p = d p in
+            assert ((get_size p ra) = a_s);
+            assert ((get_size p wa) = a_s);
+            assert ((get_size p we) = 1);
+            assert ((get_size p d) = w_s);
+            (Avar i), add p i (Eram (a_s, w_s, ra, we, wa, d)) w_s
 
 
 let reg n v =
     let i = id "" in
     fun p ->
-        let v, p = v p in
-        assert (get_size p v = n);
-        match v with
-            | Avar j ->
-                (Avar i), add p i (Ereg j) n
-            | Aconst k ->
-                (Avar i), add p i (Earg v) n
+        if List.mem_assoc i p.p_eqs then Avar i, p else
+            let v, p = v p in
+            assert (get_size p v = n);
+            match v with
+                | Avar j ->
+                    (Avar i), add p i (Ereg j) n
+                | Aconst k ->
+                    (Avar i), add p i (Earg v) n
 
 
 let program entries outputs =
@@ -242,7 +258,7 @@ let print oc p =
             (Printf.fprintf oc ", %s") (List.tl p.p_outputs));
     Printf.fprintf oc "\nVAR ";
     let stts s t = if t = 1 then s else s ^ " : " ^ (string_of_int t) in
-    ignore (Env.fold (fun s t b -> 
+    Pervasives.ignore (Env.fold (fun s t b -> 
         if b then Printf.fprintf oc "%s" (stts s t)
         else Printf.fprintf oc ", %s" (stts s t);
         false) p.p_vars true);

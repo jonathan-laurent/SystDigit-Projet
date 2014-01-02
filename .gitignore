@@ -1,6 +1,7 @@
 *.swp
 */_build/*
-*/*.byte
+*.byte
+*.native
 csim/csim
 *.o
 *.ps

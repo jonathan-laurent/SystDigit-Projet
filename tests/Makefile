@@ -1,7 +1,7 @@
 .SECONDARY:
 
 MINIJAZZ=../minijazz/mjc.byte
-SCHED=../sched/main.byte
+SCHED=../sched/main.native
 SIM=../csim/csim
 
 %.sim: %.dumb

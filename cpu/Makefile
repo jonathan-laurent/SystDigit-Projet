@@ -3,10 +3,11 @@
 GENERATOR=netlist_ast.ml netlist_gen.ml netlist_gen.mli 
 AUXILLARY=alu.ml
 
-SCHED=../sched/main.byte
+SCHED=../sched/main.native
 SIM=../csim/csim
 
-all: cpu_opt.sim
+all: _build/cpu_opt.dumb
+	$(SIM) -rom ROM0 prog_rom0.rom $<
 
 %.sim: _build/%.dumb
 	$(SIM) $<

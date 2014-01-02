@@ -45,14 +45,16 @@
 
   La mémoire est adressée sur 16 bits, il y a donc 64ko disponnibles.
 
+  Le CPU est little-endian (le mot 0x1234 est codé 34 puis 12)
+
   <subsection|Modèle simple>
 
   On définit plusieurs zones de mémoire :
 
-  <big-table|<tabular*|<tformat|<table|<row|<cell|0x0000 - 0x3FFF>|<cell|MMIO
-  (seuls quelques octets seront utilisés)>>|<row|<cell|0x4000 -
-  0x7FFF>|<cell|ROM pour programme utilisateur>>|<row|<cell|0x8000 -
-  0xFFFF>|<cell|RAM pour programme utilisateur>>>>>|Memory map>
+  <big-table|<tabular*|<tformat|<table|<row|<cell|0x0000 - 0x3FFF>|<cell|ROM
+  pour programme utilisateur>>|<row|<cell|0x4000 - 0x7FFF>|<cell|MMIO (seuls
+  quelques octets seront utilisés)>>|<row|<cell|0x8000 - 0xFFFF>|<cell|RAM
+  pour programme utilisateur>>>>>|Memory map>
 
   <subsection|Modèle avec affichage bitmapé>
 
@@ -61,12 +63,12 @@
 
   On définit plusieurs zones de mémoire :
 
-  <big-table|<tabular*|<tformat|<table|<row|<cell|0x0000 - 0x2FFF>|<cell|VGA
-  Framebuffer (noir et blanc, 336x288)>>|<row|<cell|0x3000 -
-  0x37FF>|<cell|ROM pour police d'écriture>>|<row|<cell|0x3800 -
-  0x3FFF>|<cell|MMIO (seuls quelques octets seront
-  utilisés)>>|<row|<cell|0x4000 - 0x7FFF>|<cell|ROM pour programme
-  utilisateur>>|<row|<cell|0x8000 - 0xFFFF>|<cell|RAM pour programme
+  <big-table|<tabular*|<tformat|<table|<row|<cell|0x0000 - 0x3FFF>|<cell|ROM
+  pour programme utilisateur>>|<row|<cell|0x4000 - 0x6FFF>|<cell|VGA
+  Framebuffer (noir et blanc, 336x288)>>|<row|<cell|0x7000 -
+  0x77FF>|<cell|ROM pour police d'écriture>>|<row|<cell|0x7800 -
+  0x7FFF>|<cell|MMIO (seuls quelques octets seront
+  utilisés)>>|<row|<cell|0x8000 - 0xFFFF>|<cell|RAM pour programme
   utilisateur>>>>>|Memory map>
 
   Les 0x3000 (12288) octets de mémoire pour le VGA correspondent à un
@@ -199,13 +201,15 @@
 <\auxiliary>
   <\collection>
     <\associate|table>
-      <tuple|normal|Memory map|<pageref|auto-3>>
+      <tuple|normal|Memory map|<pageref|auto-4>>
+
+      <tuple|normal|Memory map|<pageref|auto-6>>
 
       <tuple|normal|Instructions reconnues par le
-      microproceseur|<pageref|auto-12>>
+      microproceseur|<pageref|auto-15>>
 
       <tuple|normal|Instructions supplémentaires (produites par
-      l'assembleur)|<pageref|auto-13>>
+      l'assembleur)|<pageref|auto-16>>
     </associate>
     <\associate|toc>
       <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|Registres>
@@ -216,37 +220,45 @@
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-2><vspace|0.5fn>
 
-      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|Jeu
-      d'instruction> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-4><vspace|0.5fn>
+      <with|par-left|<quote|1.5fn>|Modèle simple
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-3>>
 
-      <with|par-left|<quote|1.5fn>|Types d'instructions
+      <with|par-left|<quote|1.5fn>|Modèle avec affichage bitmapé
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-5>>
 
+      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|Jeu
+      d'instruction> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-7><vspace|0.5fn>
+
+      <with|par-left|<quote|1.5fn>|Types d'instructions
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-8>>
+
       <with|par-left|<quote|6fn>|Format de base
-      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-6><vspace|0.15fn>>
-
-      <with|par-left|<quote|6fn>|Format <with|mode|<quote|math>|R>
-      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-7><vspace|0.15fn>>
-
-      <with|par-left|<quote|6fn>|Format <with|mode|<quote|math>|I>
-      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-8><vspace|0.15fn>>
-
-      <with|par-left|<quote|6fn>|Format K
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-9><vspace|0.15fn>>
 
-      <with|par-left|<quote|6fn>|Format <with|mode|<quote|math>|J>
+      <with|par-left|<quote|6fn>|Format <with|mode|<quote|math>|R>
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-10><vspace|0.15fn>>
 
+      <with|par-left|<quote|6fn>|Format <with|mode|<quote|math>|I>
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-11><vspace|0.15fn>>
+
+      <with|par-left|<quote|6fn>|Format K
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-12><vspace|0.15fn>>
+
+      <with|par-left|<quote|6fn>|Format <with|mode|<quote|math>|J>
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-13><vspace|0.15fn>>
+
       <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|Tableau
       d'instructions> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-11><vspace|0.5fn>
+      <no-break><pageref|auto-14><vspace|0.5fn>
     </associate>
   </collection>
 </auxiliary>

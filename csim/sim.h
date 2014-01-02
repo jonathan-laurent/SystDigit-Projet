@@ -26,7 +26,7 @@
 typedef unsigned long long int t_value;
 
 typedef struct _s_rom {
-    int addr_size, word_size;
+    int word_size, words_defined;
     t_value *data;
     const char *prefix;
     struct _s_rom *next;

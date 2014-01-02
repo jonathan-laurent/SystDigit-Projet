@@ -121,8 +121,8 @@ void machine_step(t_machine *m) {
                 }
                 break;
             case C_ROM:
-                if (p->eqs[i].Rom.rom != NULL) {
-                    a = m->var_values[p->eqs[i].Rom.read_addr];
+                a = m->var_values[p->eqs[i].Rom.read_addr];
+                if (p->eqs[i].Rom.rom != NULL && a < p->eqs[i].Rom.rom->words_defined) {
                     v = p->eqs[i].Rom.rom->data[a];
                 } else {
                     v = 0;
