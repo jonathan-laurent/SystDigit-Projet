@@ -45,7 +45,7 @@ let cpu_get_reg i =
     let a03 = mux (i ** 0) r6 r7 in
     let a10 = mux (i ** 1) a00 a01 in
     let a11 = mux (i ** 1) a02 a03 in
-    mux (i ** 2) a10 a00
+    mux (i ** 2) a10 a11
 
 let save_cpu_regs wr wd =
     let next_r1 = mux (eq_c 3 wr 1) r1 wd in
@@ -127,6 +127,7 @@ let rl, rh, i, ex, exf, pc =
     let instr_incri = exec ^& eq_c 5 i_i 0b00110 in
     let wr = mux instr_incri wr i_r in 
     let rwd = mux instr_incri rwd (nadder_nocarry 16 v_r (sign_extend 8 16 i_id)) in
+    
     (* instruction : j *)
     let instr_j = exec ^& eq_c 5 i_i 0b01000 in
     let next_pc = mux instr_j next_pc (nadder_nocarry 16 pc (sign_extend 11 16 i_jd)) in
@@ -142,10 +143,41 @@ let rl, rh, i, ex, exf, pc =
     let instr_jalxx = instr_jalxx ^| (instr_jxxr ^& instr_jalr) in
     let cond_jxxr = instr_jxxr ^& (alu_comparer 16 f0 i_f v_ra v_rb ^| instr_jr ^| instr_jalr) in
     let next_pc = mux cond_jxxr next_pc v_r in
-    
     (* prologue for jal/jalr *)
     let wr = mux instr_jalxx wr (const "011") in
     let rwd = mux instr_jalxx rwd next_pc in
+
+    (* instruction : lw/lwr/sw/swr *)
+    let instr_lsw = eq_c 4 (i_i % (1, 4)) 0b1000 in
+    let instr_lswr = eq_c 4 (i_i % (1, 4)) 0b1010 in
+    let instr_lswx = instr_lsw ^| instr_lswr in
+    let instr_swx = instr_lswx ^& (i_i ** 0) in
+    let instr_lwx = instr_lswx ^& (not (i_i ** 0)) in
+
+    let lswx_d = mux instr_lswr (sign_extend 5 16 i_kd) v_rb in
+    let lswx_addr_lo = reg 16 (nadder_nocarry 16 v_ra lswx_d) in
+    let lswx_addr_hi = let a, b = nadder 16 v_ra lswx_d (const "1") in b ^. reg 16 a in
+
+    let lwx_load_lo = reg 1 (exec ^& instr_lwx) in
+    let lwx_load_hi = reg 1 lwx_load_lo in
+    let ra = mux lwx_load_lo ra lswx_addr_lo in
+    let lwx_lo = reg 8 (mux lwx_load_lo (zeroes 8) ram_read) in
+    let ra = mux lwx_load_hi ra lswx_addr_hi in
+    let lwx_hi = mux lwx_load_hi (zeroes 8) ram_read in
+    let wr = mux lwx_load_hi wr i_r in 
+    let rwd = mux lwx_load_hi rwd (lwx_lo ++ lwx_hi) in
+    let exec_finished = mux instr_lwx exec_finished lwx_load_hi in
+
+    let swx_save_lo = reg 1 (exec ^& instr_swx) in
+    let swx_save_hi = reg 1 swx_save_lo in
+    let we = we ^| swx_save_lo in
+    let wa = mux swx_save_lo wa lswx_addr_lo in
+    let d = mux swx_save_lo d (v_r % (0, 7)) in
+    let we = we ^| swx_save_hi in
+    let wa = mux swx_save_hi wa lswx_addr_hi in
+    let d = mux swx_save_hi d (v_r % (8, 15)) in
+    let exec_finished = mux instr_lwx exec_finished swx_save_hi in
+
 
     save_cpu_regs wr rwd ^.
     save_ram_read (cpu_ram ra we wa d) ^.
@@ -159,18 +191,18 @@ let p =
         [
             "read_ilow", 1, rl;
             "read_ihi", 1, rh;
-            "instruction", 16, i;
             "exec_instr", 1, ex;
             "exec_finished", 1, exf;
+            "instruction", 16, i;
             "pc", 16, pc;
-            "r0", 16, r0;
-            "r1", 16, r1;
-            "r2", 16, r2;
-            "r3", 16, r3;
-            "r4", 16, r4;
-            "r5", 16, r5;
-            "r6", 16, r6;
-            "r7", 16, r7;
+            "r0_Z", 16, r0;
+            "r1_A", 16, r1;
+            "r2_B", 16, r2;
+            "r3_C", 16, r3;
+            "r4_D", 16, r4;
+            "r5_E", 16, r5;
+            "r6_F", 16, r6;
+            "r7_G", 16, r7;
         ]
 
 let () = Netlist_gen.print stdout p

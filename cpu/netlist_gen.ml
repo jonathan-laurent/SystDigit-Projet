@@ -198,7 +198,7 @@ let program entries outputs =
     {   p_inputs = p.p_inputs;
         p_eqs = p.p_eqs;
         p_vars = p.p_vars;
-        p_outputs = outputs }
+        p_outputs = List.rev outputs }
 
 
 (* Netlist printer *)

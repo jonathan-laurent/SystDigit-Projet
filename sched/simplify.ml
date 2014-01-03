@@ -336,6 +336,18 @@ let simplify p =
     topo_sort, "topo_sort";
     cascade_slices, "cascade_slices";
     pass_concat, "pass_concat";
+    select_to_id, "select_to_id";
+    arith_simplify, "arith_simplify";
+  ] p in
+  let p = simplify_with [
+    arith_simplify, "arith_simplify";
+    same_eq_simplify, "same_eq_simplify"; 
+    eliminate_id, "eliminate_id";
+  ] p in
+  let p = simplify_with [
+    topo_sort, "topo_sort";
+    cascade_slices, "cascade_slices";
+    pass_concat, "pass_concat";
     arith_simplify, "arith_simplify";
     select_to_id, "select_to_id";
     same_eq_simplify, "same_eq_simplify"; 

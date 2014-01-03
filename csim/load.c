@@ -13,6 +13,19 @@
 
 t_rom *roms = NULL;
 
+void eat_comment(FILE *file) {
+    while (1) {
+        char c = fgetc(file);
+        if (isspace(c)) continue;
+        if (c == '#') {
+            while (fgetc(file) != '\n');
+            continue;
+        }
+        ungetc(c, file);
+        break;
+    }
+}
+
 void add_rom(const char *prefix, FILE *file) {
     int i;
 
@@ -20,11 +33,12 @@ void add_rom(const char *prefix, FILE *file) {
     rom->prefix = prefix;
 
     // Load ROM file
+    eat_comment(file);
     fscanf(file, "%d %d\n", &(rom->words_defined), &(rom->word_size));
     rom->data = malloc(rom->words_defined * sizeof(t_value));
 
     for (i = 0; i < rom->words_defined; i++) {
-        fscanf(file, " ");
+        eat_comment(file);
         if (fscanf(file, "/%lu", &(rom->data[i]))) {
             // ok, value is read
         } else if (fscanf(file, "x%x", &(rom->data[i]))) {
