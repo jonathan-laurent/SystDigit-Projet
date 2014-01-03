@@ -54,7 +54,7 @@ let cpu_ram ra we wa d =
     let ser_busy = nonnull 8 ser in
     let read_data =
         set_ser_in_busy ser_busy ^.
-        set_next_ser ser ^.
+        set_next_ser (mux read_ser ser (zeroes 8)) ^.
         mux read_ser read_data ser in
 
     set_dbg_ra ra ^.
