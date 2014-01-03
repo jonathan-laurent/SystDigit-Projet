@@ -21,6 +21,7 @@ static WINDOW *wpstatus, *wpoutput, *wcmdline;
 
 void disp_init() {
     initscr();
+    savetty();
     cbreak();
     noecho();
     nonl();
@@ -39,6 +40,7 @@ void disp_init() {
 }
 
 void disp_finish() {
+    resetty();
     endwin();
 }
 
