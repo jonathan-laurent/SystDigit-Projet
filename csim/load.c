@@ -41,7 +41,7 @@ void add_rom(const char *prefix, FILE *file) {
         eat_comment(file);
         if (fscanf(file, "/%lu", &(rom->data[i]))) {
             // ok, value is read
-        } else if (fscanf(file, "x%x", &(rom->data[i]))) {
+        } else if (fscanf(file, "x%lx", &(rom->data[i]))) {
             // ok, value is read
         } else {
             rom->data[i] = read_bool(file, NULL);

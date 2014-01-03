@@ -61,6 +61,7 @@ void machine_banner(t_machine *m, FILE *stream) {
                 m->prog->vars[m->prog->inputs[i]].name);
     }
     fprintf(stream, "\n");
+    fflush(stream);
 }
 
 void read_inputs(t_machine *m, FILE *stream) {
@@ -79,6 +80,8 @@ void read_inputs(t_machine *m, FILE *stream) {
         var = p->inputs[i];
         fscanf(stream, " ");
         if (fscanf(stream, "/%lu", &(m->var_values[var]))) {
+            // ok, value is read
+        } else if (fscanf(stream, "x%lx", &(m->var_values[var]))) {
             // ok, value is read
         } else {
             m->var_values[var] = read_bool(stream, NULL);
@@ -223,6 +226,7 @@ void write_outputs(t_machine *m, FILE *stream) {
         fprintf(stream, "\t%ld\n", m->var_values[var]);
     }
     fprintf(stream, "\n");
+    fflush(stream);
 }
 
 

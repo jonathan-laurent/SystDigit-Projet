@@ -1,5 +1,6 @@
 #include <curses.h>
 #include <signal.h>
+#include <errno.h>
 
 #include "mon.h"
 
@@ -23,17 +24,33 @@ int main(int argc, char *argv[]) {
     // Launch simulator
     mkfifo(MON2SIM, 0600);
     mkfifo(SIM2MON, 0600);
+
     int sim_pid = fork();
     if (sim_pid == 0) {
         // child : launch simulator
-        freopen(MON2SIM, "r", stdin);
-        freopen(SIM2MON, "w", stdout);
-        execv(argv[1], argv + 1);
+        if (freopen(SIM2MON, "w", stdout) == NULL) {
+            fprintf(stderr, "(simulator) Could not open sim2mon for writing (%s).\n", strerror(errno));
+            return 1;
+        }
+        if (freopen(MON2SIM, "r", stdin) == NULL) {
+            fprintf(stderr, "(simulator) Could not open mon2sim for reading (%s).\n", strerror(errno));
+            return 1;
+        }
+        execv (argv[1], argv + 1);
     }
 
     t_mon mon;
-    mon.to_sim = fopen(MON2SIM, "w");
     mon.from_sim = fopen(SIM2MON, "r");
+    if (mon.from_sim == NULL) {
+        fprintf(stderr, "(monitor) Could not open sim2mon for reading (%s).\n", strerror(errno));
+        return 1;
+    }
+    mon.to_sim = fopen(MON2SIM, "w");
+    if (mon.to_sim == NULL) {
+        fprintf(stderr, "(monitor) Could not open mon2sim for reading (%s).\n", strerror(errno));
+        return 1;
+    }
+
     if (err = mon_read_prologue(&mon)) {
         fprintf(stderr, "\nError while launching simulator (%d).\n", err);
         goto finish;

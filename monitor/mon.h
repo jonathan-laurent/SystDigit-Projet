@@ -25,6 +25,12 @@ typedef enum {
     MS_AUTO
 } t_status;
 
+typedef enum {
+    TM_SECOND,
+    TM_FAST,
+    TM_NO_TICK
+} t_tick_mode;
+
 typedef struct {
     FILE *to_sim, *from_sim;
 
@@ -37,6 +43,12 @@ typedef struct {
     t_status status;
 
     time_t clk;
+    int ticker_input;
+    t_tick_mode ticker_mode;
+
+    int ser_in_in, ser_in_busy_out, ser_out;
+    char ser_buf[256];
+    char ser_out_buf;
 } t_mon;
 
 void disp_init();
@@ -49,6 +61,6 @@ int mon_read_prologue(t_mon *mon);  //  nonzero on error
 void mon_step(t_mon *mon);
 void mon_loop(t_mon *mon);
 
-void mon_handle_command(t_mon *mon, char *c);
+void mon_handle_command(t_mon *mon, const char *c);
 
 #endif

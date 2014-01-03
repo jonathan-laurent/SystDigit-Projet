@@ -10,10 +10,13 @@ let sumz n i =
 
 let p = 
     let width = 16 in
-    let sum, r = sumz width (get "in") in
+    let sum, r = sumz width (get "input") in
     program
-        [   "in", width ]
-        [   "out", width, sum;
-            "r", 1, r ]
+        [   "input", width;
+            "ser_in", 8 ]
+        [   "output", width, sum;
+            "r", 1, r;
+            "ser_busy", 1, (const "0");
+            "ser_out", 8, get "ser_in"; ]
 
 let () = Netlist_gen.print stdout p

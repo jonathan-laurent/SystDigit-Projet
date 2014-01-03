@@ -8,10 +8,10 @@ SIM=../csim/csim
 MON=../monitor/mon
 
 all: _build/cpu_opt.dumb
-	$(MON) $(SIM) -n 8 -rom ROM0 prog_rom0.rom $<
+	$(MON) $(SIM) -rom ROM0 prog_rom0.rom $<
 
 %.sim: _build/%.dumb
-	$(SIM) $<
+	$(SIM) -n 12 $<
 
 _build/%.dumb _build/%.snet _build/%_opt.dumb _build/%_opt.snet: _build/%.net
 	$(SCHED) $<

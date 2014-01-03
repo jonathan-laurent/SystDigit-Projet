@@ -72,20 +72,40 @@ void disp_display(t_mon *mon) {
 
     werase(wpstatus);
     
-    wprintw(wpstatus, "Step:\t\t%d\n", mon->step);
+    wprintw(wpstatus, "Step:\t\t%d\t%s\t%s\n",
+        mon->step,
+        (mon->status == MS_AUTO ? "A" : "M"),
+        (mon->ticker_mode == TM_SECOND ? "TS" : (mon->ticker_mode == TM_FAST ? "TF" : "TZ")));
+    
     wprintw(wpstatus, "\nInputs:\n");
     for (i = 0; i < mon->n_inputs; i++) {
-        wprintw(wpstatus, "\t%s (%d)\t%s\n", mon->inputs[i].name, mon->inputs[i].size, mon->inputs[i].value);
+        wprintw(wpstatus, " %d. %s%s\t%s (%d)\t%s\n",
+            i, 
+            (i == mon->ticker_input ? "T" : ""),
+            (i == mon->ser_in_in ? ">" : ""),
+            mon->inputs[i].name, mon->inputs[i].size, mon->inputs[i].value);
     }
     if (mon->n_inputs == 0) wprintw(wpstatus, "\t(none)\n");
+
     wprintw(wpstatus, "\nOutputs:\n");
     for (i = 0; i < mon->n_outputs; i++) {
-        wprintw(wpstatus, "\t%s\t%s\t%ld\n", mon->outputs[i].name, mon->outputs[i].v_bin, mon->outputs[i].v_int);
+        wprintw(wpstatus, " %d. %s%s\t%s\t%s\t%ld\n", i, 
+            (i == mon->ser_out ? "<" : ""),
+            (i == mon->ser_in_busy_out ? "!" : ""),
+            mon->outputs[i].name, mon->outputs[i].v_bin, mon->outputs[i].v_int);
     }
     if (mon->n_outputs == 0) wprintw(wpstatus, "\t(none)\n");
 
+    wprintw(wpstatus, "\nSerial buffer:\n%s\n", mon->ser_buf);
+
     wmove(wcmdline, 0, cmd_pos + 2);
     wrefresh(wpstatus);
+
+    if (mon->ser_out_buf != 0) {
+        wprintw(wpoutput, "%c", mon->ser_out_buf);
+        wrefresh(wpoutput);
+        mon->ser_out_buf = 0;
+    }
 }
 
 
