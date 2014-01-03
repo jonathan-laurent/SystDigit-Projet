@@ -3,4 +3,4 @@ x40 01011011            # liuz B 0x40 -> B = 0x4000 (address of ticker)
 00000010 11000001       # lw C 0(B)
 00110001 00100000       # add D D C
 /1 10001100             # incri A 1
-/-6 11100010       # j -6 (ie to lw instruction)
+/-6 11100010            # j -6 (ie to lw instruction)
