@@ -5,7 +5,7 @@ open Netlist_gen
 let sumz n i =
     let x, set_x = loop n in
     let r = reg n x in
-    let o1, o2 = Alu.nadder n i r (const "0") in
+    let o1, o2 = Alu.nadder_with_carry n i r (const "0") in
     set_x o1, o2
 
 let p = 

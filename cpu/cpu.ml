@@ -1,11 +1,11 @@
 open Netlist_gen
 open Alu
 
-let ser_out, set_ser_out = loop 8
-let ser_in_busy, set_ser_in_busy = loop 1
+let ser_out, save_ser_out = loop 8
+let ser_in_busy, save_ser_in_busy = loop 1
 
-let dbg_ra, set_dbg_ra = loop 16
-let dbg_read_data, set_dbg_read_data = loop 8
+let dbg_ra, save_dbg_ra = loop 16
+let dbg_read_data, save_dbg_read_data = loop 8
 
 let cpu_ram ra we wa d =
     (*  Ram chip has word size = 8 bits and address size = 16 bits
@@ -34,31 +34,31 @@ let cpu_ram ra we wa d =
     let read_data = mux read_ram read_data rd_ram in
 
     let read_tick = eq_c 16 ra 0x4000 in
-    let next_tick, set_next_tick = loop 8 in
+    let next_tick, save_next_tick = loop 8 in
     let tick = nadder 8 (reg 8 next_tick) (get "tick" ++ zeroes 7) in
     let read_data =
-        set_next_tick (mux read_tick tick (zeroes 8)) ^.
+        save_next_tick (mux read_tick tick (zeroes 8)) ^.
         mux read_tick read_data tick in
 
     let write_ser = we ^& (eq_c 16 wa 0x4102) in
     let read_data =
-        set_ser_out (mux write_ser (zeroes 8) d) ^.
+        save_ser_out (mux write_ser (zeroes 8) d) ^.
         read_data in
 
     let read_ser = eq_c 16 ra 0x4100 in
-    let next_ser, set_next_ser = loop 8 in
+    let next_ser, save_next_ser = loop 8 in
     let ser = reg 8 next_ser in
     let ser_in = get "ser_in" in
     let iser = nonnull 8 ser_in in
     let ser = mux iser ser ser_in in
     let ser_busy = nonnull 8 ser in
     let read_data =
-        set_ser_in_busy ser_busy ^.
-        set_next_ser (mux read_ser ser (zeroes 8)) ^.
+        save_ser_in_busy ser_busy ^.
+        save_next_ser (mux read_ser ser (zeroes 8)) ^.
         mux read_ser read_data ser in
 
-    set_dbg_ra ra ^.
-    set_dbg_read_data read_data ^.
+    save_dbg_ra ra ^.
+    save_dbg_read_data read_data ^.
     read_data
     
 

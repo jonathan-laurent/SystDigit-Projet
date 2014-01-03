@@ -10,8 +10,6 @@
     command line
 */
 
-#define STATUS_WIN_WIDTH 60
-
 static void disp_cmdline();
 
 static char command[100];
@@ -26,13 +24,15 @@ void disp_init() {
     noecho();
     nonl();
 
-    wpstatus = newwin(LINES - 4, STATUS_WIN_WIDTH, 1, 1);
-    wpoutput = newwin(LINES - 4, COLS - STATUS_WIN_WIDTH - 3, 1, STATUS_WIN_WIDTH + 2);
+    const int status_win_width = COLS / 2 + 5;
+    wpstatus = newwin(LINES - 4, status_win_width, 1, 1);
+    wpoutput = newwin(LINES - 4, COLS - status_win_width - 3, 1, status_win_width + 2);
     wcmdline = newwin(1, COLS - 2, LINES - 2, 1);
 
     intrflush(wcmdline, FALSE);
     keypad(wcmdline, TRUE);
     nodelay(wcmdline, TRUE);
+    scrollok(wpoutput, TRUE);
 
     cmd_pos = 0;
     command[0] = 0;
