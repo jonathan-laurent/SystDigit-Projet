@@ -1,16 +1,11 @@
 open Netlist_gen
 open Alu
 
-let zeroes n =
-    const (String.make n '0')
-
-let one n =
-    const "1" ++ zeroes (n-1)
-let two n =
-    const "01" ++ zeroes (n-2)
-
 let ser_out, set_ser_out = loop 8
 let ser_in_busy, set_ser_in_busy = loop 1
+
+let dbg_ra, set_dbg_ra = loop 16
+let dbg_read_data, set_dbg_read_data = loop 8
 
 let cpu_ram ra we wa d =
     (*  Ram chip has word size = 8 bits and address size = 16 bits
@@ -40,10 +35,9 @@ let cpu_ram ra we wa d =
 
     let read_tick = eq_c 16 ra 0x4000 in
     let next_tick, set_next_tick = loop 8 in
-    let tick = reg 8 next_tick in
-    let tick_d = sign_extend 1 8 (get "tick") in
+    let tick = nadder 8 (reg 8 next_tick) (get "tick" ++ zeroes 7) in
     let read_data =
-        set_next_tick (mux read_tick (nadder_nocarry 8 tick tick_d) tick_d) ^.
+        set_next_tick (mux read_tick tick (zeroes 8)) ^.
         mux read_tick read_data tick in
 
     let write_ser = we ^& (eq_c 16 wa 0x4102) in
@@ -51,7 +45,7 @@ let cpu_ram ra we wa d =
         set_ser_out (mux write_ser (zeroes 8) d) ^.
         read_data in
 
-    let read_ser = eq_c 16 ra 0x4000 in
+    let read_ser = eq_c 16 ra 0x4100 in
     let next_ser, set_next_ser = loop 8 in
     let ser = reg 8 next_ser in
     let ser_in = get "ser_in" in
@@ -63,6 +57,8 @@ let cpu_ram ra we wa d =
         set_next_ser ser ^.
         mux read_ser read_data ser in
 
+    set_dbg_ra ra ^.
+    set_dbg_read_data read_data ^.
     read_data
     
 
@@ -118,7 +114,7 @@ let rl, rh, i, ex, exf, pc =
 
     let ra = mux read_ilow ra pc in
     let ilow = reg 8 (mux read_ilow (zeroes 8) ram_read) in
-    let ra = mux read_ihi ra (nadder_nocarry 16 pc (one 16)) in
+    let ra = mux read_ihi ra (nadder 16 pc (one 16)) in
     let ihi = mux read_ihi (zeroes 8) ram_read in
 
     let read_ilow = save_next_read_ihi read_ilow in
@@ -130,7 +126,7 @@ let rl, rh, i, ex, exf, pc =
     let i = save_i i in
 
     (* Execute instruction if exec is set *)
-    let next_pc = nadder_nocarry 16 pc (two 16) in
+    let next_pc = nadder 16 pc (two 16) in
     let exec_finished = exec in
 
     let i_i = i % (11, 15) in
@@ -149,6 +145,22 @@ let rl, rh, i, ex, exf, pc =
     let wr = zeroes 3 in
     let rwd = zeroes 16 in
 
+    (* instruction : add/sub/mul/div/unsigned/or/and/xor/nor/lsl/lsr/asr *)
+    let instr_alu = eq_c 3 (i_i % (2, 4)) 0b000 in
+    let f0 = i_i ** 0 in
+    let f1 = i_i ** 1 in
+    let double_instr_alu = instr_alu ^& (not f1) ^& (i_f ** 1) ^& (ne_n 3 i_r (const "101")) in
+    let instr_alu = exec ^& instr_alu in
+    let instr_alu_2 = reg 1 (exec ^& double_instr_alu) in
+
+    let alu_d1, alu_d2 = alu f1 f0 i_f v_ra v_rb in
+    let wr = mux instr_alu wr i_r in
+    let rwd = mux instr_alu rwd alu_d1 in
+    let wr = mux instr_alu_2 wr (const "101") in
+    let rwd = mux instr_alu_2 rwd alu_d2 in
+    let exec_finished = mux double_instr_alu exec_finished instr_alu_2 in
+
+
     (* instruction : se/sne/slt/slte/sleu/sleu *)
     let instr_sxxx = exec ^& (eq_c 4 (i_i % (1, 4)) 0b0010) in
     let f0 = i_i ** 0 in
@@ -159,7 +171,7 @@ let rl, rh, i, ex, exf, pc =
     (* instruction : incri *)
     let instr_incri = exec ^& eq_c 5 i_i 0b00110 in
     let wr = mux instr_incri wr i_r in 
-    let rwd = mux instr_incri rwd (nadder_nocarry 16 v_r (sign_extend 8 16 i_id)) in
+    let rwd = mux instr_incri rwd (nadder 16 v_r (sign_extend 8 16 i_id)) in
     (* instruction : shi *)
     let instr_shi = exec ^& eq_c 5 i_i 0b00111 in
     let wr = mux instr_shi wr i_r in
@@ -167,10 +179,10 @@ let rl, rh, i, ex, exf, pc =
     
     (* instruction : j *)
     let instr_j = exec ^& eq_c 5 i_i 0b01000 in
-    let next_pc = mux instr_j next_pc (nadder_nocarry 16 pc (sign_extend 11 16 i_jd)) in
+    let next_pc = mux instr_j next_pc (nadder 16 pc (sign_extend 11 16 i_jd)) in
     (* instruction : jal *)
     let instr_jal = exec ^& eq_c 5 i_i 0b01001 in
-    let next_pc = mux instr_jal next_pc (nadder_nocarry 16 pc (sign_extend 11 16 i_jd)) in
+    let next_pc = mux instr_jal next_pc (nadder 16 pc (sign_extend 11 16 i_jd)) in
     let instr_jalxx = instr_jal in
     (* instruction : jr/jalr/jer/jner/jltr/jler/jltru/ljeru *)
     let instr_jxxr = exec ^& eq_c 4 (i_i % (1, 4)) 0b0101 in
@@ -187,7 +199,7 @@ let rl, rh, i, ex, exf, pc =
     (* instruction : lra *)
     let instr_lra = exec ^& eq_c 5 i_i 0b01100 in
     let wr = mux instr_lra wr (const "101") in
-    let rwd = mux instr_lra rwd (nadder_nocarry 16 pc (sign_extend 11 16 i_jd)) in
+    let rwd = mux instr_lra rwd (nadder 16 pc (sign_extend 11 16 i_jd)) in
 
     (* instruction : lw/lwr/sw/swr *)
     let instr_lsw = eq_c 4 (i_i % (1, 4)) 0b1000 in
@@ -197,8 +209,8 @@ let rl, rh, i, ex, exf, pc =
     let instr_lwx = instr_lswx ^& (not (i_i ** 0)) in
 
     let lswx_d = mux instr_lswr (sign_extend 5 16 i_kd) v_rb in
-    let lswx_addr_lo = reg 16 (nadder_nocarry 16 v_ra lswx_d) in
-    let lswx_addr_hi = let a, b = nadder 16 v_ra lswx_d (const "1") in b ^. reg 16 a in
+    let lswx_addr_lo = reg 16 (nadder 16 v_ra lswx_d) in
+    let lswx_addr_hi = let a, b = nadder_with_carry 16 v_ra lswx_d (const "1") in b ^. reg 16 a in
 
     let lwx_load_lo = reg 1 (exec ^& instr_lwx) in
     let lwx_load_hi = reg 1 lwx_load_lo in
@@ -218,16 +230,38 @@ let rl, rh, i, ex, exf, pc =
     let we = we ^| swx_save_hi in
     let wa = mux swx_save_hi wa lswx_addr_hi in
     let d = mux swx_save_hi d (v_r % (8, 15)) in
-    let exec_finished = mux instr_lwx exec_finished swx_save_hi in
+    let exec_finished = mux instr_swx exec_finished swx_save_hi in
+
+    (* instruction : lb/lbr/sb/sbr *)
+    let instr_lsb = eq_c 4 (i_i % (1, 4)) 0b1001 in
+    let instr_lsbr = eq_c 4 (i_i % (1, 4)) 0b1011 in
+    let instr_lsbx = instr_lsb ^| instr_lsbr in
+    let instr_sbx = instr_lsbx ^& (i_i ** 0) in
+    let instr_lbx = instr_lsbx ^& (not (i_i ** 0)) in
+
+    let lsbx_d = mux instr_lsbr (sign_extend 5 16 i_kd) v_rb in
+    let lsbx_addr = reg 16 (nadder 16 v_ra lsbx_d) in
+
+    let lbx_load = reg 1 (exec ^& instr_lbx) in
+    let ra = mux lbx_load ra lsbx_addr in
+    let wr = mux lbx_load wr i_r in
+    let rwd = mux lbx_load rwd (ram_read ++ (zeroes 8)) in
+    let exec_finished = mux instr_lbx exec_finished lbx_load in
+
+    let sbx_save = reg 1 (exec ^& instr_sbx) in
+    let we = we ^| sbx_save in
+    let wa = mux sbx_save wa lsbx_addr in
+    let d = mux sbx_save d (v_r % (0, 7)) in
+    let exec_finished = mux instr_sbx exec_finished sbx_save in
 
     (* instruction : lil/lilz/liu/liuz *)
     let instr_lixx = eq_c 3 (i_i % (2, 4))0b110 in
-    let instr_lixz = i ** 0 in
-    let instr_liux = i ** 1 in
+    let instr_lixz = i_i ** 0 in
+    let instr_liux = i_i ** 1 in
     let wr = mux instr_lixx wr i_r in
     let rwd = mux instr_lixx rwd 
         (mux instr_liux
-            ( (* lil *) i_id ++ (mux instr_lixz (v_r % (8, 15)) (zeroes 8)) )
+            ( (* lil *) i_id ++ (mux instr_lixz (v_r % (8, 15)) (zeroes 8)))
             ( (* liu *) (mux instr_lixz (v_r % (0, 7)) (zeroes 8)) ++ i_id)) in
 
     save_cpu_regs wr rwd ^.
@@ -248,6 +282,8 @@ let p =
             "exec_instr", 1, ex;
             "exec_finished", 1, exf;
             "instruction", 16, i;
+            "ra", 16, dbg_ra;
+            "read_data", 8, dbg_read_data;
             "pc", 16, pc;
             "r0_Z", 16, r0;
             "r1_A", 16, r1;

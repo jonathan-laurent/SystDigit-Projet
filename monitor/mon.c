@@ -152,6 +152,8 @@ void mon_step(t_mon *mon) {
         ticker = 1;
     }
     if (mon->ticker_input != -1) {
+        if (mon->inputs[mon->ticker_input].size == 1)
+            ticker = (ticker != 0 ? 1 : 0);
         sprintf(mon->inputs[mon->ticker_input].value, "/%d", ticker);
     }
 

@@ -145,8 +145,8 @@
   ; R<rsub|hi>\<leftarrow\>0> (8 bits)>|<cell|>>|<row|<cell|10011>|<cell|K>|<cell|>|<cell|sb>|<cell|<math|mem<around*|(|R<rprime|'>+d|)>\<leftarrow\>R<rsub|lo>>
   (8 bits)>|<cell|>>|<row|<cell|10100>|<cell|R>|<cell|*>|<cell|lwr>|<cell|<math|R\<leftarrow\>mem<around*|(|R<rsub|A>+R<rsub|B>|)>>
   (16 bits)>|<cell|>>|<row|<cell|10101>|<cell|R>|<cell|*>|<cell|swr>|<cell|<math|mem<around*|(|R<rsub|A>+R<rsub|B>|)>\<leftarrow\>R>
-  (16 bits)>|<cell|>>|<row|<cell|10110>|<cell|R>|<cell|*>|<cell|lbr>|<cell|<math|R\<leftarrow\>mem<around*|(|R<rsub|A>+R<rsub|B>|)>>
-  (8 bits)>|<cell|>>|<row|<cell|10111>|<cell|R>|<cell|*>|<cell|sbr>|<cell|<math|mem<around*|(|R<rsub|A>+R<rsub|B>|)>\<leftarrow\>R>
+  (16 bits)>|<cell|>>|<row|<cell|10110>|<cell|R>|<cell|*>|<cell|lbr>|<cell|<math|R<rsub|lo>\<leftarrow\>mem<around*|(|R<rsub|A>+R<rsub|B>|)>
+  ; R<rsub|hi>\<leftarrow\>0> (8 bits)>|<cell|>>|<row|<cell|10111>|<cell|R>|<cell|*>|<cell|sbr>|<cell|<math|mem<around*|(|R<rsub|A>+R<rsub|B>|)>\<leftarrow\>R<rsub|lo><rsup|>>
   (8 bits)>|<cell|>>|<row|<cell|11000>|<cell|I>|<cell|>|<cell|lil>|<cell|<math|R<rsub|lo>\<leftarrow\>d>>|<cell|>>|<row|<cell|11001>|<cell|I>|<cell|>|<cell|lilz>|<cell|<math|R<rsub|lo>\<leftarrow\>d
   ; R<rsub|hi>\<leftarrow\>0>>|<cell|>>|<row|<cell|11010>|<cell|I>|<cell|>|<cell|liu>|<cell|<math|R<rsub|hi>\<leftarrow\>d>>|<cell|>>|<row|<cell|11011>|<cell|I>|<cell|>|<cell|liuz>|<cell|<math|R<rsub|hi>\<leftarrow\>d
   ; R<rsub|lo>\<leftarrow\>0>>|<cell|>>|<row|<cell|11100>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|11101>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|11110>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|11111>|<cell|>|<cell|>|<cell|nop<samp|>>|<cell|<math|\<varnothing\>>>|<cell|>>>>>|Instructions

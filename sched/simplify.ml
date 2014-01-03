@@ -143,6 +143,10 @@ let arith_simplify p =
         Earg(Aconst(Array.make sz false))
       | Ebinop(_, Avar(a), Avar(b)) when a = b ->
         Earg(Avar(a))
+      
+      | Emux(_, a, b) when a = b -> Earg(a)
+      | Emux(Aconst[|false|], a, b) -> Earg(a)    
+      | Emux(Aconst[|true|], a, b) -> Earg(b)
 
       | Eslice(i, j, k) when i = j -> Eselect(i, k)
 

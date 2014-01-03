@@ -1,5 +1,13 @@
 open Netlist_gen
 
+let zeroes n =
+    const (String.make n '0')
+
+let one n =
+    const "1" ++ zeroes (n-1)
+let two n =
+    const "01" ++ zeroes (n-2)
+
 let rec rep n k =
     if n = 1 then k
     else
@@ -27,24 +35,54 @@ let rec nonnull n a =
 let rec sign_extend n_a n_dest a =
     a ++ rep (n_dest - n_a) (a ** (n_a - 1))
 
+(* Arithmetic operations *)
+
 let fulladder a b c =
        let s = a ^^ b ^^ c in
        let r = (a ^& b) ^| ((a ^^ b) ^& c) in
        s, r
 
-let rec nadder n a b c_in =
+let rec nadder_with_carry n a b c_in =
     if n = 1 then fulladder a b c_in
     else 
         let s_n, c_n1 = fulladder (a ** 0) (b ** 0) c_in in
-        let s_n1, c_out = nadder (n-1) (a % (1, n-1)) (b % (1, n-1)) c_n1 in
+        let s_n1, c_out = nadder_with_carry (n-1) (a % (1, n-1)) (b % (1, n-1)) c_n1 in
         s_n ++ s_n1, c_out
 
-let rec npshift_signed n p a b =
-    a (* TODO *)
-
-let nadder_nocarry n a b =
-    let a, b = nadder n a b (const "0") in
+let nadder n a b =
+    let a, b = nadder_with_carry n a b (const "0") in
     ignore b a
+
+let rec nsubber n a b =
+    zeroes n (* TODO *)
+
+let rec nmul n a b =
+    zeroes n, zeroes n (* TODO : retuns lo and hi part of 32-bit answer *)
+
+let rec ndiv n a b =
+    zeroes n, zeroes n (* TODO : returns quotient and remainder *)
+
+let rec nmulu n a b =
+    zeroes n, zeroes n (* TODO : same as nmul but unsigned *)
+
+let rec ndivu n a b =
+    zeroes n, zeroes n (* TODO : save as ndiv but unsigned *)
+
+(* Shifts *)
+
+let npshift_signed n p a b =
+    a (* TODO (here b is a signed integer on p bits) *)
+
+let op_lsl n a b =
+    a (* TODO (b is unsigned, same size n) *)
+
+let op_lsr n a b =
+    a (* TODO (b is unsigned, same size n) *)
+
+let op_asr n a b =
+    a (* TODO (b unsigned size n) *)
+
+(* Comparisons *)
 
 let rec eq_n n a b =
     all1 n (not (a ^^ b))
@@ -64,6 +102,8 @@ let rec le_n n a b =
 let rec ule_n n a b =
     const "0"       (* TODO : less than or equal, unsigned *)
 
+(* Big pieces *)
+
 let alu_comparer n f0 f a b =
     (*
         f0  f   action
@@ -82,3 +122,66 @@ let alu_comparer n f0 f a b =
     let lte_unsigned = mux (f ** 0) (ult_n n a b) (ule_n n a b) in
     let lte = mux (f ** 1) lte_signed lte_unsigned in
     mux f0 eq_ne lte
+
+let alu_arith f1 f a b =
+    (*  See table for ALU below *)
+    let add = nadder 16 a b in
+    let sub = nsubber 16 a b in
+    let mul, mul2 = nmul 16 a b in
+    let div, div2 = ndiv 16 a b in
+    let mulu, mulu2 = nmulu 16 a b in
+    let divu, divu2 = ndivu 16 a b in
+    let q00 = mux (f ** 0) add sub in
+    let q01 = mux (f ** 0) mul div in
+    let q03 = mux (f ** 0) mulu divu in
+    let q10 = mux (f ** 1) q00 q01 in
+    let q11 = mux (f ** 1) q00 q03 in
+    let q = mux f1 q10 q11 in
+    let r01 = mux (f ** 0) mul2 div2 in
+    let r03 = mux (f ** 0) mulu2 divu2 in
+    let r10 = mux (f ** 1) (zeroes 16) r01 in
+    let r11 = mux (f ** 1) (zeroes 16) r03 in
+    let r = mux f1 r10 r11 in
+    q, r
+
+let alu_logic f a b =
+    (*  See table for ALU below *)
+    let q0 = mux (f ** 0) (a ^| b) (a ^& b) in
+    let q1 = mux (f ** 0) (a ^^ b) (not (a ^| b)) in
+    mux (f ** 1) q0 q1
+
+let alu_shifts f a b =
+    (*  See table for ALU below *)
+    let q1 = mux (f ** 0) (op_lsr 16 a b) (op_asr 16 a b) in
+    mux (f ** 1) (op_lsl 16 a b) q1
+
+let alu f1 f0 f a b =
+    (*
+        f0  f1  f   action
+        --  --  -   ------
+        0   0   0   add
+        0   0   1   sub
+        0   0   2   mul
+        0   0   3   div
+        0   1   0   addu
+        0   1   1   subu
+        0   1   2   mulu
+        0   1   3   divu
+        1   0   0   or
+        1   0   1   and
+        1   0   2   xor
+        1   0   3   nor
+        1   1   0   lsl
+        1   1   1   lsl
+        1   1   2   lsr
+        1   1   3   asr
+    *)
+    let arith, arith_r = alu_arith f1 f a b in
+    let logic = alu_logic f a b in
+    let shifts = alu_shifts f a b in
+
+    let q0 = mux f1 logic shifts in
+    let s = mux f0 arith q0 in
+    let r = mux f0 arith_r (zeroes 16) in
+    s, r
+
