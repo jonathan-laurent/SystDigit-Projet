@@ -12,6 +12,18 @@ let rec eq_c n v c = (* v is a value, c is a constant *)
     else
         (eq_c 1 (v ** 0) (c mod 2)) ^& (eq_c (n-1) (v % (1, n-1)) (c/2))
 
+let rec all1 n x =
+    if n = 1 then
+        x
+    else
+        (x ** 0) ^& (all1 (n-1) (x % (1, n-1)))
+
+let rec nonnull n a =
+    if n = 1 then
+        a
+    else
+        (a ** 0) ^| (nonnull (n-1) (a % (1, n-1)))
+
 let rec sign_extend n_a n_dest a =
     a ++ rep (n_dest - n_a) (a ** (n_a - 1))
 
@@ -27,23 +39,18 @@ let rec nadder n a b c_in =
         let s_n1, c_out = nadder (n-1) (a % (1, n-1)) (b % (1, n-1)) c_n1 in
         s_n ++ s_n1, c_out
 
+let rec npshift_signed n p a b =
+    a (* TODO *)
+
 let nadder_nocarry n a b =
     let a, b = nadder n a b (const "0") in
     ignore b a
 
 let rec eq_n n a b =
-    if n = 1 then
-        not (a ^^ b)
-    else 
-        (not ((a ** 0) ^^ (b ** 0)))
-        ^& (eq_n (n-1) (a % (1, n-1)) (b % (1, n-1)))
+    all1 n (not (a ^^ b))
 
 let rec ne_n n a b =
-    if n = 1 then
-        a ^^ b
-    else 
-        ((a ** 0) ^^ (b ** 0))
-        ^| (ne_n (n-1) (a % (1, n-1)) (b % (1, n-1)))
+    nonnull n (a ^^ b)
 
 let rec lt_n n a b =
     const "0"       (* TODO : less than *)

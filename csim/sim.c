@@ -52,6 +52,17 @@ t_machine *init_machine (t_program *p) {
     return m;
 }
 
+void machine_banner(t_machine *m, FILE *stream) {
+    int i;
+    fprintf(stream, "%d %d\n", m->prog->n_inputs, m->prog->n_outputs);
+    for (i = 0; i < m->prog->n_inputs; i++) {
+        fprintf(stream, "%d %s\n",
+                m->prog->vars[m->prog->inputs[i]].size,
+                m->prog->vars[m->prog->inputs[i]].name);
+    }
+    fprintf(stream, "\n");
+}
+
 void read_inputs(t_machine *m, FILE *stream) {
     /*  FORMAT :
         For each input in the list, *in the order specified*,

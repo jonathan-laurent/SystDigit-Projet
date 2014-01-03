@@ -14,18 +14,18 @@
 
 
 void usage() {
-    printf ("\nUsage:\n\tcsim [options] <netlist_file>\n\n");
-    printf("Available options:\n");
-    printf("\n    -rom <prefix> <file>\n\tLoad a filename as a ROM file for the machine\n");
-    printf("\tA given ROM file is used for all ROM chips with variable name having given prefix\n");
-    printf("\n    -n <steps>\n\tOnly run #steps steps of simulation (0 = infinity)\n");
-    printf("\n    -in <in-file>\n\tRead inputs from given file (eg. named pipe). Defaults to STDIN.\n");
-    printf("\n    -out <out-file>\n\tWrite outputs to given file (eg. named pipe). Defaults to STDOut.\n");
+    fprintf(stderr, "\nUsage:\n\tcsim [options] <netlist_file>\n\n");
+    fprintf(stderr, "Available options:\n");
+    fprintf(stderr, "\n    -rom <prefix> <file>\n\tLoad a filename as a ROM file for the machine\n");
+    fprintf(stderr, "\tA given ROM file is used for all ROM chips with variable name having given prefix\n");
+    fprintf(stderr, "\n    -n <steps>\n\tOnly run #steps steps of simulation (0 = infinity)\n");
+    fprintf(stderr, "\n    -in <in-file>\n\tRead inputs from given file (eg. named pipe). Defaults to STDIN.\n");
+    fprintf(stderr, "\n    -out <out-file>\n\tWrite outputs to given file (eg. named pipe). Defaults to STDOUT.\n");
     exit(1);
 }
 
 // Arguments to be parsed
-int steps = 12;
+int steps = 0;
 char *filename = NULL;
 char *infile = NULL;
 char *outfile = NULL;
@@ -88,6 +88,7 @@ int main(int argc, char **argv) {
 
     // Run
     t_machine *machine = init_machine(program);
+    machine_banner(machine, output);
     i = 0;
     while (i < steps || steps == 0) {
         read_inputs(machine, input);

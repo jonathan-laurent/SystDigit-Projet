@@ -9,25 +9,62 @@ let one n =
 let two n =
     const "01" ++ zeroes (n-2)
 
+let ser_out, set_ser_out = loop 8
+let ser_in_busy, set_ser_in_busy = loop 1
 
 let cpu_ram ra we wa d =
     (*  Ram chip has word size = 8 bits and address size = 16 bits
         0x0000 to 0x3FFF is ROM0
-        0x4000 to 0x7FFF is unused, reserved for MMIO
+        0x4000 to 0x7FFF is MMIO :
+            byte 0x4000 is clock ticker (increments by one every tick ; zeroed on read)
+            byte 0x4100 is serial input (zeroed on read)
+            byte 0x4102 is serial output
         0x8000 to 0xFFFF is RAM *)
+    let read_data = zeroes 8 in
+
     let ra_hi1 = ra ** 15 in
     let ra_lo1 = ra % (0, 14) in
     let ra_hi2 = ra ** 14 in
     let ra_lo2 = ra % (0, 13) in
     let read_rom = (not ra_hi1) ^& (not ra_hi2) in
+    let rd_rom = rom "ROM0" 14 8 ra_lo2 in
+    let read_data = mux read_rom read_data rd_rom in
+
+
     let read_ram = ra_hi1 in
     let wa_hi1 = wa ** 15 in
     let wa_lo1 = wa % (0, 14) in
     let we_ram = we ^& wa_hi1 in
-    
-    let rd_rom = rom "ROM0" 14 8 ra_lo2 in
     let rd_ram = ram 15 8 ra_lo1 we_ram wa_lo1 d in
-    mux read_ram (mux read_rom (zeroes 8) rd_rom) rd_ram
+    let read_data = mux read_ram read_data rd_ram in
+
+    let read_tick = eq_c 16 ra 0x4000 in
+    let next_tick, set_next_tick = loop 8 in
+    let tick = reg 8 next_tick in
+    let tick_d = sign_extend 1 8 (get "tick") in
+    let read_data =
+        set_next_tick (mux read_tick (nadder_nocarry 8 tick tick_d) tick_d) ^.
+        mux read_tick read_data tick in
+
+    let write_ser = we ^& (eq_c 16 wa 0x4102) in
+    let read_data =
+        set_ser_out (mux write_ser (zeroes 8) d) ^.
+        read_data in
+
+    let read_ser = eq_c 16 ra 0x4000 in
+    let next_ser, set_next_ser = loop 8 in
+    let ser = reg 8 next_ser in
+    let ser_in = get "ser_in" in
+    let iser = nonnull 8 ser_in in
+    let ser = mux iser ser ser_in in
+    let ser_busy = nonnull 8 ser in
+    let read_data =
+        set_ser_in_busy ser_busy ^.
+        set_next_ser ser ^.
+        mux read_ser read_data ser in
+
+    read_data
+    
 
 let r0 = zeroes 16
 let r1, save_r1 = loop 16
@@ -64,17 +101,6 @@ let save_cpu_regs wr wd =
     save_r6 (reg 16 next_r6) ^.
     save_r7 (reg 16 next_r7) ^.
     r0
-
-(*
-let ticker n =
-    let k, save_k = loop n in
-    let s = reg n k in
-    let next = nadder_nocarry n s (one n) in
-    ignore (save_k next) s
-
-let tick1 = ticker 1
-let tick2 = ticker 2
-*)
 
 let rl, rh, i, ex, exf, pc =
     let next_read, save_next_read = loop 1 in
@@ -123,10 +149,21 @@ let rl, rh, i, ex, exf, pc =
     let wr = zeroes 3 in
     let rwd = zeroes 16 in
 
+    (* instruction : se/sne/slt/slte/sleu/sleu *)
+    let instr_sxxx = exec ^& (eq_c 4 (i_i % (1, 4)) 0b0010) in
+    let f0 = i_i ** 0 in
+    let cond_sxxx = alu_comparer 16 f0 i_f v_ra v_rb in
+    let wr = mux instr_sxxx wr i_r in
+    let rwd = mux instr_sxxx rwd (mux cond_sxxx (zeroes 16) (one 16)) in
+
     (* instruction : incri *)
     let instr_incri = exec ^& eq_c 5 i_i 0b00110 in
     let wr = mux instr_incri wr i_r in 
     let rwd = mux instr_incri rwd (nadder_nocarry 16 v_r (sign_extend 8 16 i_id)) in
+    (* instruction : shi *)
+    let instr_shi = exec ^& eq_c 5 i_i 0b00111 in
+    let wr = mux instr_shi wr i_r in
+    let rwd = mux instr_shi rwd (npshift_signed 16 8 v_r i_id) in
     
     (* instruction : j *)
     let instr_j = exec ^& eq_c 5 i_i 0b01000 in
@@ -146,6 +183,11 @@ let rl, rh, i, ex, exf, pc =
     (* prologue for jal/jalr *)
     let wr = mux instr_jalxx wr (const "011") in
     let rwd = mux instr_jalxx rwd next_pc in
+
+    (* instruction : lra *)
+    let instr_lra = exec ^& eq_c 5 i_i 0b01100 in
+    let wr = mux instr_lra wr (const "101") in
+    let rwd = mux instr_lra rwd (nadder_nocarry 16 pc (sign_extend 11 16 i_jd)) in
 
     (* instruction : lw/lwr/sw/swr *)
     let instr_lsw = eq_c 4 (i_i % (1, 4)) 0b1000 in
@@ -178,6 +220,15 @@ let rl, rh, i, ex, exf, pc =
     let d = mux swx_save_hi d (v_r % (8, 15)) in
     let exec_finished = mux instr_lwx exec_finished swx_save_hi in
 
+    (* instruction : lil/lilz/liu/liuz *)
+    let instr_lixx = eq_c 3 (i_i % (2, 4))0b110 in
+    let instr_lixz = i ** 0 in
+    let instr_liux = i ** 1 in
+    let wr = mux instr_lixx wr i_r in
+    let rwd = mux instr_lixx rwd 
+        (mux instr_liux
+            ( (* lil *) i_id ++ (mux instr_lixz (v_r % (8, 15)) (zeroes 8)) )
+            ( (* liu *) (mux instr_lixz (v_r % (0, 7)) (zeroes 8)) ++ i_id)) in
 
     save_cpu_regs wr rwd ^.
     save_ram_read (cpu_ram ra we wa d) ^.
@@ -187,7 +238,10 @@ let rl, rh, i, ex, exf, pc =
 
 let p =
     program
-        []
+        [
+            "tick", 1;
+            "ser_in", 8;
+        ]
         [
             "read_ilow", 1, rl;
             "read_ihi", 1, rh;
@@ -203,6 +257,8 @@ let p =
             "r5_E", 16, r5;
             "r6_F", 16, r6;
             "r7_G", 16, r7;
+            "ser_out", 8, ser_out;
+            "ser_in_busy", 1, ser_in_busy;
         ]
 
 let () = Netlist_gen.print stdout p

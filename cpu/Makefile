@@ -5,9 +5,10 @@ AUXILLARY=alu.ml
 
 SCHED=../sched/main.native
 SIM=../csim/csim
+MON=../monitor/mon
 
 all: _build/cpu_opt.dumb
-	$(SIM) -rom ROM0 prog_rom0.rom $<
+	$(MON) $(SIM) -n 8 -rom ROM0 prog_rom0.rom $<
 
 %.sim: _build/%.dumb
 	$(SIM) $<

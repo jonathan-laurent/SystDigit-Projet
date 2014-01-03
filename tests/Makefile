@@ -5,7 +5,7 @@ SCHED=../sched/main.native
 SIM=../csim/csim
 
 %.sim: %.dumb
-	$(SIM) $<
+	$(SIM) -n 12 $<
 
 %.dumb %.snet %_opt.dumb %_opt.snet: %.net
 	$(SCHED) $<

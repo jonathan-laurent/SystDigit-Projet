@@ -124,6 +124,7 @@ void add_rom(const char *prefix, FILE *file);
 
 // Implemented in sim.c
 t_machine *init_machine(t_program *p);
+void machine_banner(t_machine *m, FILE *stream);
 void read_inputs(t_machine *m, FILE *stream);
 void machine_step(t_machine *m);
 void write_outputs(t_machine *m, FILE *stream);
