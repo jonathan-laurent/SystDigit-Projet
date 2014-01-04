@@ -3,7 +3,7 @@
 GENERATOR=netlist_ast.ml netlist_gen.ml netlist_gen.mli 
 AUXILLARY=alu.ml
 
-SCHED=../sched/main.native
+SCHED=../sched/sched
 SIM=../csim/csim
 MON=../monitor/mon
 

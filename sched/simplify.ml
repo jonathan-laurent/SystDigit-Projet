@@ -328,9 +328,8 @@ let topo_sort p =
 let rec simplify_with steps p =
   let pp, use = List.fold_left
     (fun (x, u) (f, n) ->
-      print_string n;
       let xx, uu = f x in 
-      print_string (if uu then " *\n" else "\n");
+      print_endline (if uu then n ^ " *" else n);
       (xx, u || uu))
     (p, false) steps in
   if use then simplify_with steps pp else pp
@@ -338,6 +337,8 @@ let rec simplify_with steps p =
 let simplify p =
   let p = simplify_with [
     topo_sort, "topo_sort";
+  ] p in
+  let p = simplify_with [
     cascade_slices, "cascade_slices";
     pass_concat, "pass_concat";
     select_to_id, "select_to_id";

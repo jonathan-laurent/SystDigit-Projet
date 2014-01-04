@@ -74,9 +74,12 @@ void disp_display(t_mon *mon) {
 
     werase(wpstatus);
     
-    wprintw(wpstatus, "Step:\t\t%d\t%s\t%s\n",
+    wprintw(wpstatus, "Step:\t\t%d\t%s",
         mon->step,
-        (mon->status == MS_AUTO ? "A" : "M"),
+        (mon->status == MS_AUTO ? "A" : (mon->status == MS_RUN ? "M" : "")));
+    if (mon->status == MS_FREQ) wprintw(wpstatus, "%dHz", mon->freq);
+    if (mon->status == MS_AUTO) wprintw(wpstatus, " %dHz", mon->max_freq);
+    wprintw(wpstatus, "\t%s\n",
         (mon->ticker_mode == TM_SECOND ? "TS" : (mon->ticker_mode == TM_FAST ? "TF" : "TZ")));
     
     wprintw(wpstatus, "\nInputs:\n");
@@ -98,9 +101,30 @@ void disp_display(t_mon *mon) {
     }
     if (mon->n_outputs == 0) wprintw(wpstatus, "\t(none)\n");
 
-    wprintw(wpstatus, "\nSerial buffer:\n%s\n", mon->ser_buf);
+    if (mon->ser_in_in != -1) {
+        wprintw(wpstatus, "\nSerial buffer:\n%s\n", mon->ser_buf);
+    }
 
-    wmove(wcmdline, 0, cmd_pos + 2);
+    wprintw(wpstatus, "\n\n");
+    for (i = 0; i < 8; i++)
+        wprintw(wpstatus, "  %s ", (mon->d7[i] != -1 && mon->outputs[mon->d7[i]].v_bin[0] == '1' ? "---" : "   "));
+    wprintw(wpstatus, "\n");
+    for (i = 0; i < 8; i++)
+        wprintw(wpstatus, " %c   %c",
+                (mon->d7[i] != -1 && mon->outputs[mon->d7[i]].v_bin[1] == '1' ? '|' : ' '),
+                (mon->d7[i] != -1 && mon->outputs[mon->d7[i]].v_bin[2] == '1' ? '|' : ' '));
+    wprintw(wpstatus, "\n");
+    for (i = 0; i < 8; i++)
+        wprintw(wpstatus, "  %s ", (mon->d7[i] != -1 && mon->outputs[mon->d7[i]].v_bin[3] == '1' ? "---" : "   "));
+    wprintw(wpstatus, "\n");
+    for (i = 0; i < 8; i++)
+        wprintw(wpstatus, " %c   %c",
+                (mon->d7[i] != -1 && mon->outputs[mon->d7[i]].v_bin[4] == '1' ? '|' : ' '),
+                (mon->d7[i] != -1 && mon->outputs[mon->d7[i]].v_bin[5] == '1' ? '|' : ' '));
+    wprintw(wpstatus, "\n");
+    for (i = 0; i < 8; i++)
+        wprintw(wpstatus, "  %s ", (mon->d7[i] != -1 && mon->outputs[mon->d7[i]].v_bin[6] == '1' ? "---" : "   "));
+
     wrefresh(wpstatus);
 
     if (mon->ser_out_buf != 0) {
@@ -108,6 +132,9 @@ void disp_display(t_mon *mon) {
         wrefresh(wpoutput);
         mon->ser_out_buf = 0;
     }
+
+    wmove(wcmdline, 0, cmd_pos + 2);
+    wrefresh(wcmdline);
 }
 
 

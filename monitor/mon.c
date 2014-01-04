@@ -10,6 +10,7 @@
     q                   Quit
     a                   Set automatic mode (send input all the time)
     m                   Set manual mode (send input when user sends empty command)
+    f <freq>            Set frequency mode (every second, do 'freq' steps)
     i <id> <v>          Set input #id to value v (v is a string, transmitted as-is to simulator)
     tf                  Tick fast (send 1 every cycle)
     ts                  Tick for every second
@@ -22,6 +23,7 @@
                         i3 : output for serial output
     s                   Set no serial input
     :<text>             Send text to serial
+    d7 x x ...          Set outputs to be interpreted as 7-bar digit displayer (up to 8 outputs, use - for no output)
 */
 
 int mon_read_prologue(t_mon *mon) {
@@ -49,6 +51,8 @@ int mon_read_prologue(t_mon *mon) {
     }
 
     mon->step = 0;
+    mon->freq = 1;
+    mon->max_freq = 1000;
     mon->status = MS_RUN;
 
     mon->clk = time(NULL);
@@ -61,15 +65,39 @@ int mon_read_prologue(t_mon *mon) {
     mon->ser_buf[0] = 0;
     mon->ser_out_buf = 0;
 
+    for (i = 0; i <  8; i++) mon->d7[i] = -1;
+
     return 0;
 }
 
 void mon_loop(t_mon *mon) {
     disp_display(mon);
+    time_t prev_time = time(NULL);
+    int steps = 0;
+
     while (mon->status != MS_FINISH) {
         handle_kbd(mon);
         if (mon->status == MS_AUTO) {
             mon_step(mon);
+            steps++;
+            if (time(NULL) != prev_time) {
+                mon->max_freq = steps;
+                steps = 0;
+                prev_time = time(NULL);
+            }
+        } else if (mon->status == MS_FREQ) {
+            if (steps < mon->freq) {
+                mon_step(mon);
+                steps++;
+                usleep(1000000 / mon->freq - 1000000 / mon->max_freq);
+            } else {
+                if (prev_time != time(NULL)) {
+                    steps = 0;
+                    prev_time = time(NULL);
+                } else {
+                    usleep(10000);
+                }
+            }
         } else {
             usleep(10000);
         }
@@ -85,6 +113,12 @@ void mon_handle_command(t_mon *mon, const char *c) {
         mon->status = MS_AUTO;
     } else if (!strcmp(c, "m")) {
         mon->status = MS_RUN;
+    } else if (c[0] == 'f') {
+        const char *p = c + 1;
+        mon->freq = 0;
+        while (isspace(*p)) p++;
+        while (isdigit(*p)) mon->freq = 10 * mon->freq + (*(p++) - '0');
+        mon->status = MS_FREQ;
     } else if (c[0] == 'i') {
         const char *p = c + 1;
         int a = 0;
@@ -132,9 +166,26 @@ void mon_handle_command(t_mon *mon, const char *c) {
                 mon->ser_out = w;
             }
         }
+
     } else if (c[0] == ':') {
         strcat(mon->ser_buf, c + 1);
         strcat(mon->ser_buf, "\n");
+    } else if (c[0] == 'd' && c[1] == '7') {
+        const char *p = c + 2;
+        int i = 0;
+        for (i = 0; i < 8; i++) {
+            while (isspace(*p)) p++;
+            if (*p == 0) {
+                mon->d7[i] = -1;
+            } else if (*p == '-') {
+                mon->d7[i] = -1;
+                p++;
+            } else {
+                mon->d7[i] = 0;
+                while (isdigit(*p)) mon->d7[i] = 10 * mon->d7[i] + (*(p++) - '0');
+                if (mon->d7[i] >= mon->n_outputs) mon->d7[i] = -1;
+            }
+        }
     }
     disp_display(mon);
 }

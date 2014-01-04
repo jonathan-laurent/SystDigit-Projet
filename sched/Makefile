@@ -1,10 +1,11 @@
 IN=graph.ml main.ml netlist_ast.ml netlist_dumb.ml netlist_lexer.mll netlist.ml netlist_parser.mly netlist_printer.ml scheduler.ml simplify.ml
 
-all: main.native
+all: sched
 
-main.native: $(IN)
+sched: $(IN)
 	ocamlbuild -libs unix main.native
+	mv main.native sched
 
 clean:
+	rm sched
 	rm -rf _build
-	rm main.native

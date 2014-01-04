@@ -3,6 +3,8 @@
 *.byte
 *.native
 csim/csim
+sched/sched
+monitor/mon
 *.o
 *.ps
 */*.net

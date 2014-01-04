@@ -69,11 +69,11 @@ dec7(i:[4]) = (o:[7]) where
 	o = decode7
 end where
 
-main() = (sec_u:[4],d7_sec_u:[7],sec_d:[4],d7_sec_d:[7],
+main(tick) = (sec_u:[4],d7_sec_u:[7],sec_d:[4],d7_sec_d:[7],
 		  min_u:[4],d7_min_u:[7],min_d:[4],d7_min_d:[7],
 		  hour_u:[4],d7_hour_u:[7],hour_d:[4],d7_hour_d:[7],
 		  next_day) where
-	(count_seca, aug_seca) = count_mod_keep<2,2>(1);
+	(count_seca, aug_seca) = count_mod_keep<2,2>(tick);
 	(count_secb, aug_secb) = count_mod_keep<3,5>(aug_seca);
 	(count_secc, aug_min)  = count_mod_keep<3,6>(aug_secb);
 	sec_u = count_seca[0] . count_secb;

@@ -1,17 +1,25 @@
 .SECONDARY:
 
 MINIJAZZ=../minijazz/mjc.byte
-SCHED=../sched/main.native
+SCHED=../sched/sched
 SIM=../csim/csim
+MON=../monitor/mon
 
-%.sim: %.dumb
+%.mon: _build/%.dumb
+	$(MON) $(SIM) -rom decode7 decode7.rom $<
+
+%.sim: _build/%.dumb
 	$(SIM) -n 12 $<
 
-%.dumb %.snet %_opt.dumb %_opt.snet: %.net
+_build/%.dumb _build/%.snet _build/%_opt.dumb _build/%_opt.snet: _build/%.net
 	$(SCHED) $<
 
-%.net: %.mj
+_build/%.net: %.mj _build
 	$(MINIJAZZ) $<
+	mv `basename -s .mj $<`.net _build
+
+_build:
+	mkdir _build
 
 clean:
 	rm *.net

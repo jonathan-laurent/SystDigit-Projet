@@ -22,7 +22,8 @@ typedef struct {
 typedef enum {
     MS_FINISH,
     MS_RUN,
-    MS_AUTO
+    MS_AUTO,
+    MS_FREQ
 } t_status;
 
 typedef enum {
@@ -39,6 +40,8 @@ typedef struct {
     t_output *outputs;
 
     int step;
+    int freq;
+    int max_freq;
 
     t_status status;
 
@@ -49,6 +52,8 @@ typedef struct {
     int ser_in_in, ser_in_busy_out, ser_out;
     char ser_buf[256];
     char ser_out_buf;
+
+    int d7[8];
 } t_mon;
 
 void disp_init();

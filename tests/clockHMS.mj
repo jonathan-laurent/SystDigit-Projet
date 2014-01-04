@@ -62,8 +62,8 @@ count_mod<n, m>(in:[n], op) = (out:[n], reset) where
 	out = and_each<n>(neq, incr);
 end where
 
-main() = (count_sec:[6],count_min:[6],count_hour:[5],next_day) where
-	(count_sec, aug_min) = count_mod<6, 60>(save_sec, 1);
+main(tick) = (count_sec:[6],count_min:[6],count_hour:[5],next_day) where
+	(count_sec, aug_min) = count_mod<6, 60>(save_sec, tick);
 	save_sec = reg_n<6>(count_sec);
 	
 	(count_min, aug_hour) = count_mod<6, 60>(save_min, aug_min);
