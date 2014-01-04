@@ -167,21 +167,32 @@ void mon_handle_command(t_mon *mon, const char *c) {
         if (c[1] == 0) {
             mon->ser_in_in = mon->ser_in_busy_out = mon->ser_out = -1;
         } else {
-            int u = 0, v = 0, w = 0;
+            int u = -1, v = -1, w = -1;
             const char *p = c + 1;
             while (isspace(*p)) p++;
-            while (isdigit(*p)) u = u * 10 + (*(p++) - '0');
-            while (isspace(*p)) p++;
-            while (isdigit(*p)) v = v * 10 + (*(p++) - '0');
-            while (isspace(*p)) p++;
-            while (isdigit(*p)) w = w * 10 + (*(p++) - '0');
-            if (u >= 0 && u < mon->n_inputs &&
-                v >= 0 && v < mon->n_outputs &&
-                w >= 0 && w < mon->n_outputs) {
-                mon->ser_in_in = u;
-                mon->ser_in_busy_out = v;
-                mon->ser_out = w;
+            if (*p == '-') {
+                p++;
+            } else if (*p != 0) {
+                u = 0;
+                while (isdigit(*p)) u = u * 10 + (*(p++) - '0');
             }
+            while (isspace(*p)) p++;
+            if (*p == '-') {
+                p++;
+            } else if (*p != 0) {
+                v = 0;
+                while (isdigit(*p)) v = v * 10 + (*(p++) - '0');
+            }
+            while (isspace(*p)) p++;
+            if (*p == '-') {
+                p++;
+            } else if (*p != 0) {
+                w = 0;
+                while (isdigit(*p)) w = w * 10 + (*(p++) - '0');
+            }
+            if (u < mon->n_inputs) mon->ser_in_in = u;
+            if (v < mon->n_outputs) mon->ser_in_busy_out = v;
+            if (w < mon->n_outputs) mon->ser_out = w;
         }
 
     } else if (c[0] == ':') {

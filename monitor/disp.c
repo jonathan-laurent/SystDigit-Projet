@@ -15,7 +15,7 @@ static void disp_cmdline();
 static char command[100];
 static int cmd_pos = 0;
 
-static WINDOW *wpstatus, *wpoutput, *wcmdline;
+static WINDOW *wpstatus, *wpstatus2, *wpoutput, *wcmdline;
 
 void disp_init() {
     initscr();
@@ -24,9 +24,10 @@ void disp_init() {
     noecho();
     nonl();
 
-    const int status_win_width = COLS / 2 + 5;
+    const int status_win_width = COLS / 2;
     wpstatus = newwin(LINES - 4, status_win_width, 1, 1);
-    wpoutput = newwin(LINES - 4, COLS - status_win_width - 3, 1, status_win_width + 2);
+    wpstatus2 = newwin(10, COLS - status_win_width - 3, 1, status_win_width + 2);
+    wpoutput = newwin(LINES - 13, COLS - status_win_width - 3, 11, status_win_width + 2);
     wcmdline = newwin(1, COLS - 2, LINES - 2, 1);
 
     intrflush(wcmdline, FALSE);
@@ -102,31 +103,38 @@ void disp_display(t_mon *mon) {
     }
     if (mon->n_outputs == 0) wprintw(wpstatus, "\t(none)\n");
 
-    if (mon->ser_in_in != -1) {
-        wprintw(wpstatus, "\nSerial buffer:\n%s\n", mon->ser_buf);
-    }
+    wrefresh(wpstatus);
 
-    wprintw(wpstatus, "\n\n");
+    werase(wpstatus2);
+
     for (i = 0; i < 8; i++)
-        wprintw(wpstatus, "  %s ", (mon->d7[i] != -1 && mon->outputs[mon->d7[i]].v_bin[0] == '1' ? "---" : "   "));
-    wprintw(wpstatus, "\n");
+        wprintw(wpstatus2, "  %s ", (mon->d7[i] != -1 && mon->outputs[mon->d7[i]].v_bin[0] == '1' ? "---" : "   "));
+    wprintw(wpstatus2, "\n");
     for (i = 0; i < 8; i++)
-        wprintw(wpstatus, " %c   %c",
+        wprintw(wpstatus2, " %c   %c",
                 (mon->d7[i] != -1 && mon->outputs[mon->d7[i]].v_bin[1] == '1' ? '|' : ' '),
                 (mon->d7[i] != -1 && mon->outputs[mon->d7[i]].v_bin[2] == '1' ? '|' : ' '));
-    wprintw(wpstatus, "\n");
+    wprintw(wpstatus2, "\n");
     for (i = 0; i < 8; i++)
-        wprintw(wpstatus, "  %s ", (mon->d7[i] != -1 && mon->outputs[mon->d7[i]].v_bin[3] == '1' ? "---" : "   "));
-    wprintw(wpstatus, "\n");
+        wprintw(wpstatus2, "  %s ", (mon->d7[i] != -1 && mon->outputs[mon->d7[i]].v_bin[3] == '1' ? "---" : "   "));
+    wprintw(wpstatus2, "\n");
     for (i = 0; i < 8; i++)
-        wprintw(wpstatus, " %c   %c",
+        wprintw(wpstatus2, " %c   %c",
                 (mon->d7[i] != -1 && mon->outputs[mon->d7[i]].v_bin[4] == '1' ? '|' : ' '),
                 (mon->d7[i] != -1 && mon->outputs[mon->d7[i]].v_bin[5] == '1' ? '|' : ' '));
-    wprintw(wpstatus, "\n");
+    wprintw(wpstatus2, "\n");
     for (i = 0; i < 8; i++)
-        wprintw(wpstatus, "  %s ", (mon->d7[i] != -1 && mon->outputs[mon->d7[i]].v_bin[6] == '1' ? "---" : "   "));
+        wprintw(wpstatus2, "  %s ", (mon->d7[i] != -1 && mon->outputs[mon->d7[i]].v_bin[6] == '1' ? "---" : "   "));
 
-    wrefresh(wpstatus);
+    if (mon->ser_in_in != -1) {
+        wprintw(wpstatus2, "\nSerial buffer:\n%s\n", mon->ser_buf);
+    }
+
+    if (mon->ser_out != -1) {
+        wmove(wpstatus2, 9, 0);
+        wprintw(wpstatus2, "Serial output:");
+    }
+    wrefresh(wpstatus2);
 
     if (mon->ser_out_buf != 0) {
         wprintw(wpoutput, "%c", mon->ser_out_buf);
