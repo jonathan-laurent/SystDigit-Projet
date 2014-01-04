@@ -74,11 +74,12 @@ void disp_display(t_mon *mon) {
 
     werase(wpstatus);
     
-    wprintw(wpstatus, "Step:\t\t%d\t%s",
-        mon->step,
-        (mon->status == MS_AUTO ? "A" : (mon->status == MS_RUN ? "M" : "")));
-    if (mon->status == MS_FREQ) wprintw(wpstatus, "%dHz", mon->freq);
-    if (mon->status == MS_AUTO) wprintw(wpstatus, " %dHz", mon->max_freq);
+    wprintw(wpstatus, "Step:\t\t%d\t", mon->step);
+    if (mon->status == MS_RUN) wprintw(wpstatus, "M");
+    if (mon->status == MS_FREQ)
+        wprintw(wpstatus, "%dHz\t%dHz", mon->actual_freq, mon->target_freq);
+    if (mon->status == MS_AUTO)
+        wprintw(wpstatus, "%dHz\t", mon->actual_freq);
     wprintw(wpstatus, "\t%s\n",
         (mon->ticker_mode == TM_SECOND ? "TS" : (mon->ticker_mode == TM_FAST ? "TF" : "TZ")));
     

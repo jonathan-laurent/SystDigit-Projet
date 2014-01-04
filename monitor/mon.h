@@ -40,8 +40,11 @@ typedef struct {
     t_output *outputs;
 
     int step;
-    int freq;
+
     int max_freq;
+    int target_freq;
+    int actual_freq;
+    int calc_time_usec;
 
     t_status status;
 

@@ -4,6 +4,8 @@
 
 #include "mon.h"
 
+#define ABS(x) ((x)>0?(x):-(x))
+
 /*
     Monitor commands :
     (empty cmd)         Send input & update output
@@ -51,9 +53,12 @@ int mon_read_prologue(t_mon *mon) {
     }
 
     mon->step = 0;
-    mon->freq = 1;
-    mon->max_freq = 1000;
     mon->status = MS_RUN;
+
+    mon->target_freq = 1;
+    mon->max_freq = 10;
+    mon->actual_freq = 0;
+    mon->calc_time_usec = 10;
 
     mon->clk = time(NULL);
     mon->ticker_input = -1;
@@ -81,23 +86,33 @@ void mon_loop(t_mon *mon) {
             mon_step(mon);
             steps++;
             if (time(NULL) != prev_time) {
-                mon->max_freq = steps;
+                mon->actual_freq = steps;
+                if (mon->actual_freq > mon->max_freq)
+                    mon->max_freq = mon->actual_freq;
                 steps = 0;
                 prev_time = time(NULL);
             }
         } else if (mon->status == MS_FREQ) {
-            if (steps < mon->freq) {
-                mon_step(mon);
-                steps++;
-                usleep(1000000 / mon->freq - 1000000 / mon->max_freq);
-            } else {
-                if (prev_time != time(NULL)) {
-                    steps = 0;
-                    prev_time = time(NULL);
-                } else {
-                    usleep(10000);
+            if (prev_time != time(NULL)) {
+                mon->actual_freq = steps;
+                if (mon->actual_freq > mon->max_freq)
+                    mon->max_freq = mon->actual_freq;
+                steps = 0;
+                prev_time = time(NULL);
+
+                if (mon->target_freq != mon->actual_freq && mon->actual_freq != 0) {
+                    if (mon->actual_freq * 100 > 130 * mon->target_freq)
+                        mon->calc_time_usec = 1000000 / mon->max_freq;
+                    if (mon->actual_freq * 100 > mon->target_freq * 105)
+                        mon->calc_time_usec -= 10;
+                    if (mon->actual_freq < mon->target_freq)
+                        mon->calc_time_usec += 10;
                 }
             }
+            mon_step(mon);
+            steps++;
+            int sleep = 1000000 / mon->target_freq - mon->calc_time_usec;
+            if (sleep > 0) usleep(sleep);
         } else {
             usleep(10000);
         }
@@ -115,9 +130,11 @@ void mon_handle_command(t_mon *mon, const char *c) {
         mon->status = MS_RUN;
     } else if (c[0] == 'f') {
         const char *p = c + 1;
-        mon->freq = 0;
+        mon->target_freq = 0;
         while (isspace(*p)) p++;
-        while (isdigit(*p)) mon->freq = 10 * mon->freq + (*(p++) - '0');
+        while (isdigit(*p)) mon->target_freq = 10 * mon->target_freq + (*(p++) - '0');
+        if (mon->target_freq == 0) mon->target_freq = 1000;
+        mon->calc_time_usec = 1000;
         mon->status = MS_FREQ;
     } else if (c[0] == 'i') {
         const char *p = c + 1;
