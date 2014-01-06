@@ -209,20 +209,20 @@ let rl, rh, i, ex, exf, pc =
     let instr_lwx = instr_lswx ^& (not (i_i ** 0)) in
 
     let lswx_d = mux instr_lswr (sign_extend 5 16 i_kd) v_rb in
-    let lswx_addr_lo = reg 16 (nadder 16 v_ra lswx_d) in
-    let lswx_addr_hi = let a, b = nadder_with_carry 16 v_ra lswx_d (const "1") in b ^. reg 16 a in
+    let lswx_addr_lo = nadder 16 v_ra lswx_d in
+    let lswx_addr_hi = let a, b = nadder_with_carry 16 v_ra lswx_d (const "1") in b ^. a in
 
     let lwx_load_lo = reg 1 (exec ^& instr_lwx) in
     let lwx_load_hi = reg 1 lwx_load_lo in
-    let ra = mux lwx_load_lo ra lswx_addr_lo in
+    let ra = mux lwx_load_lo ra (reg 16 lswx_addr_lo) in
     let lwx_lo = reg 8 (mux lwx_load_lo (zeroes 8) ram_read) in
-    let ra = mux lwx_load_hi ra lswx_addr_hi in
+    let ra = mux lwx_load_hi ra (reg 16 lswx_addr_hi) in
     let lwx_hi = mux lwx_load_hi (zeroes 8) ram_read in
     let wr = mux lwx_load_hi wr i_r in 
     let rwd = mux lwx_load_hi rwd (lwx_lo ++ lwx_hi) in
     let exec_finished = mux instr_lwx exec_finished lwx_load_hi in
 
-    let swx_save_lo = reg 1 (exec ^& instr_swx) in
+    let swx_save_lo = exec ^& instr_swx in
     let swx_save_hi = reg 1 swx_save_lo in
     let we = we ^| swx_save_lo in
     let wa = mux swx_save_lo wa lswx_addr_lo in
@@ -240,19 +240,19 @@ let rl, rh, i, ex, exf, pc =
     let instr_lbx = instr_lsbx ^& (not (i_i ** 0)) in
 
     let lsbx_d = mux instr_lsbr (sign_extend 5 16 i_kd) v_rb in
-    let lsbx_addr = reg 16 (nadder 16 v_ra lsbx_d) in
+    let lsbx_addr = nadder 16 v_ra lsbx_d in
 
     let lbx_load = reg 1 (exec ^& instr_lbx) in
-    let ra = mux lbx_load ra lsbx_addr in
+    let ra = mux lbx_load ra (reg 16 lsbx_addr) in
     let wr = mux lbx_load wr i_r in
     let rwd = mux lbx_load rwd (ram_read ++ (zeroes 8)) in
     let exec_finished = mux instr_lbx exec_finished lbx_load in
 
-    let sbx_save = reg 1 (exec ^& instr_sbx) in
+    let sbx_save = exec ^& instr_sbx in
     let we = we ^| sbx_save in
     let wa = mux sbx_save wa lsbx_addr in
     let d = mux sbx_save d (v_r % (0, 7)) in
-    let exec_finished = mux instr_sbx exec_finished sbx_save in
+    (* no mux exec_finished, sb runs immediately *)
 
     (* instruction : lil/lilz/liu/liuz *)
     let instr_lixx = eq_c 3 (i_i % (2, 4))0b110 in

@@ -24,7 +24,7 @@ void disp_init() {
     noecho();
     nonl();
 
-    const int status_win_width = COLS / 2;
+    const int status_win_width = COLS - 58;
     wpstatus = newwin(LINES - 4, status_win_width, 1, 1);
     wpstatus2 = newwin(10, COLS - status_win_width - 3, 1, status_win_width + 2);
     wpoutput = newwin(LINES - 13, COLS - status_win_width - 3, 11, status_win_width + 2);

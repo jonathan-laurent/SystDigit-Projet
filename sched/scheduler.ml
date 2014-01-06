@@ -4,11 +4,11 @@ module Smap = Map.Make(String)
 
 exception Combinational_cycle
 
+let add_arg x l = match x with
+  | Avar(f) -> f::l
+  | Aconst(_) -> l
+
 let read_exp eq =
-  let add_arg x l = match x with
-    | Avar(f) -> f::l
-    | Aconst(_) -> l
-  in
   let aux = function
   | Earg(x) -> add_arg x []
   | Ereg(i) -> []
@@ -16,7 +16,7 @@ let read_exp eq =
   | Ebinop(_, x, y) -> add_arg x (add_arg y [])
   | Emux(a, b, c) -> add_arg a (add_arg b (add_arg c []))
   | Erom(_, _, a) -> add_arg a []
-  | Eram(_, _, a, b, c, d) -> []
+  | Eram(_, _, ra, wa, we, d) -> add_arg ra []
   | Econcat(u, v) -> add_arg u (add_arg v [])
   | Eslice(_, _, a) -> add_arg a []
   | Eselect(_, a) -> add_arg a []
@@ -24,18 +24,14 @@ let read_exp eq =
     aux eq
 
 let read_exp_all eq =
-  let add_arg x l = match x with
-    | Avar(f) -> f::l
-    | Aconst(_) -> l
-  in
   let aux = function
   | Earg(x) -> add_arg x []
   | Ereg(i) -> [i]
   | Enot(x) -> add_arg x []
   | Ebinop(_, x, y) -> add_arg x (add_arg y [])
   | Emux(a, b, c) -> add_arg a (add_arg b (add_arg c []))
-  | Erom(_, _, a) -> add_arg a []
-  | Eram(_, _, a, b, c, d) -> add_arg a (add_arg b (add_arg c (add_arg d [])))
+  | Erom(_, _, ra) -> add_arg ra []
+  | Eram(_, _, ra, wa, we, d) -> add_arg ra (add_arg wa (add_arg we (add_arg d [])))
   | Econcat(u, v) -> add_arg u (add_arg v [])
   | Eslice(_, _, a) -> add_arg a []
   | Eselect(_, a) -> add_arg a []
