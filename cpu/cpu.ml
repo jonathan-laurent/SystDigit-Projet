@@ -203,6 +203,12 @@ let rl, rh, i, ex, exf, pc =
     let wr = mux instr_lra wr (const "101") in
     let rwd = mux instr_lra rwd (nadder 16 pc (sign_extend 11 16 i_jd)) in
 
+    (* instruction : hlt *)
+    let instr_hlt = exec ^& eq_c 5 i_i 0b01111 in
+    let halted, set_halted = loop 1 in
+    let halted = set_halted (instr_hlt ^| (reg 1 halted)) in
+    let exec_finished = mux halted exec_finished (const "0") in
+
     (* instruction : lw/lwr/sw/swr *)
     let instr_lsw = eq_c 4 (i_i % (1, 4)) 0b1000 in
     let instr_lswr = eq_c 4 (i_i % (1, 4)) 0b1010 in

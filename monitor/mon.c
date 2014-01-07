@@ -80,6 +80,8 @@ void mon_loop(t_mon *mon) {
     time_t prev_time = time(NULL);
     int steps = 0;
 
+    int displayer_steps = 0;
+
     while (mon->status != MS_FINISH) {
         handle_kbd(mon);
         if (mon->status == MS_AUTO) {
@@ -91,6 +93,11 @@ void mon_loop(t_mon *mon) {
                     mon->max_freq = mon->actual_freq;
                 steps = 0;
                 prev_time = time(NULL);
+            }
+            displayer_steps++;
+            if (displayer_steps >= mon->actual_freq / 100) {
+                disp_display(mon);
+                displayer_steps = 0;
             }
         } else if (mon->status == MS_FREQ) {
             if (prev_time != time(NULL)) {
@@ -111,6 +118,11 @@ void mon_loop(t_mon *mon) {
             }
             mon_step(mon);
             steps++;
+            displayer_steps++;
+            if (displayer_steps >= mon->actual_freq / 100) {
+                disp_display(mon);
+                displayer_steps = 0;
+            }
             int sleep = 1000000 / mon->target_freq - mon->calc_time_usec;
             if (sleep > 0) usleep(sleep);
         } else {
@@ -122,6 +134,7 @@ void mon_loop(t_mon *mon) {
 void mon_handle_command(t_mon *mon, const char *c) {
     if (c[0] == 0) {    // empty command : run step
         mon_step(mon);
+        disp_display(mon);
     } else if (!strcmp(c, "q")) {
         mon->status = MS_FINISH;
     } else if (!strcmp(c, "a")) {
@@ -134,6 +147,7 @@ void mon_handle_command(t_mon *mon, const char *c) {
         while (isspace(*p)) p++;
         while (isdigit(*p)) mon->target_freq = 10 * mon->target_freq + (*(p++) - '0');
         if (mon->target_freq == 0) mon->target_freq = 1000;
+        mon->actual_freq = mon->target_freq;
         mon->calc_time_usec = 1000;
         mon->status = MS_FREQ;
     } else if (c[0] == 'i') {
@@ -270,7 +284,5 @@ void mon_step(t_mon *mon) {
         mon->ser_out_buf = mon->outputs[mon->ser_out].v_int;
     }
     
-    // Display
     mon->step++;
-    disp_display(mon);
 }

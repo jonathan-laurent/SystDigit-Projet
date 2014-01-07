@@ -3,14 +3,16 @@
 <style|generic>
 
 <\body>
-  <doc-data|<doc-title|Spécification processeur>>
+  <doc-data|<doc-title|Spécification processeur>|<doc-subtitle|Projet Système
+  Digital 2013>|<doc-author|<author-data|<author-name|A.Auvolat, E.Enguehard,
+  J.Laurent>>>>
 
   Nous proposons ici une spécification pour un processeur minimaliste 16 bit
   RISC.
 
   <section|Registres>
 
-  La machine dispose de 8 registres \S généraux \T :
+  La machine dispose de 8 registres \S généraux \T, tous de taille 16 bits :
 
   \;
 
@@ -36,64 +38,48 @@
     par les instructions <verbatim|pop> et <verbatim|push>
   </itemize>
 
-  De plus, le processeur dispose d'un registre non manipulable, le registre
-  <verbatim|PC> (program counter).
+  Ces 8 registres sont tous manipulables par les instructions prenant un
+  registre comme argument. De plus, le processeur dispose d'un registre
+  manipulable uniquement par certaines instructions spécifiques, le registre
+  <verbatim|PC> (program counter : contient l'adresse de l'instruction
+  courante).
 
   Les numéros de registres sont donc codés sur 3 bits.
 
   <section|Mémoire>
 
-  La mémoire est adressée sur 16 bits, il y a donc 64ko disponnibles.
+  La mémoire est adressée sur 16 bits et les mots mémoire font 8 bits, il y a
+  donc 64ko disponnibles.
 
   Le CPU est little-endian (le mot 0x1234 est codé 34 puis 12)
-
-  <subsection|Modèle simple>
 
   On définit plusieurs zones de mémoire :
 
   <big-table|<tabular*|<tformat|<table|<row|<cell|0x0000 - 0x3FFF>|<cell|ROM
   pour programme utilisateur>>|<row|<cell|0x4000 - 0x7FFF>|<cell|MMIO (seuls
-  quelques octets seront utilisés)>>|<row|<cell|0x8000 - 0xFFFF>|<cell|RAM
-  pour programme utilisateur>>>>>|Memory map>
+  quelques octets sont utilisés)>>|<row|<cell|0x8000 - 0xFFFF>|<cell|RAM pour
+  programme utilisateur>>>>>|Memory map>
 
-  <subsection|Modèle avec affichage bitmapé>
+  Les bits suivants sont utilisés pour la MMIO :
 
-  <em|De moins en moins de chances d'être implémenté... mais ça n'a rien
-  d'impossible.>
-
-  On définit plusieurs zones de mémoire :
-
-  <big-table|<tabular*|<tformat|<table|<row|<cell|0x0000 - 0x3FFF>|<cell|ROM
-  pour programme utilisateur>>|<row|<cell|0x4000 - 0x6FFF>|<cell|VGA
-  Framebuffer (noir et blanc, 336x288)>>|<row|<cell|0x7000 -
-  0x77FF>|<cell|ROM pour police d'écriture>>|<row|<cell|0x7800 -
-  0x7FFF>|<cell|MMIO (seuls quelques octets seront
-  utilisés)>>|<row|<cell|0x8000 - 0xFFFF>|<cell|RAM pour programme
-  utilisateur>>>>>|Memory map>
-
-  Les 0x3000 (12288) octets de mémoire pour le VGA correspondent à un
-  affichage bitmapé 336x288 noir et blanc (un octet représente 8 pixels), ce
-  qui fait avec une police d'écriture 8x8 un affichage texte possible en
-  42x36.
-
-  Les 0x0800 (2048) octets de RAM pour la fonte suffisent à définir 256
-  caractères en résolution 8x8 (donc 8 octets par caractère).
-
-  Sur les 0x8000 octets alloués pour la MMIO, on en aura un pour l'entrée
-  série, un pour la sortie série, un pour l'horloge et c'est tout.
-
-  Le reste est auto-explicite.
+  <big-table|<tabular*|<tformat|<table|<row|<cell|>>>>><tabular*|<tformat|<table|<row|<cell|byte
+  at 0x4000>|<cell|Clock ticker (incremented every tick, reset on
+  read)>>|<row|<cell|byte at 0x4100>|<cell|Serial input (set when byte
+  received, reset on read)>>|<row|<cell|byte at 0x4102>|<cell|Serial output
+  (sends byte immediately on write)>>>>>|Addresses MMIO>
 
   <section|Jeu d'instruction>
 
   Les instructions sont codées sur 16 bits. Les tableaux suivants montrent
-  les instructions avec les poids forts à gauche et les poids faibles à
-  droite.
+  les instructions avec les bits de poids forts à gauche et les bits de poids
+  faibles à droite (convention contraire à celle exprimée dans le
+  <verbatim|README>).
 
   <subsection|Types d'instructions>
 
   <paragraph|Format de base><tabular*|<tformat|<cwith|2|2|1|-1|cell-lborder|1px>|<cwith|2|2|1|-1|cell-bborder|1px>|<cwith|2|2|1|-1|cell-tborder|1px>|<cwith|2|2|3|3|cell-rborder|1px>|<table|<row|<cell|5
-  bits>|<cell|3 bits>|<cell|8 bits>>|<row|<cell|<math|I>>|<cell|<math|R>>|<cell|<math|\<ldots\>>>>>>>
+  bits>|<cell|3 bits>|<cell|8 bits>>|<row|<cell|<math|I>>|<cell|<math|R>>|<cell|<math|\<ldots\>>>>|<row|<cell|poids
+  forts>|<cell|>|<cell|poids faibles>>>>>
 
   <paragraph|Format <math|R>><tabular*|<tformat|<cwith|2|2|1|-1|cell-lborder|1px>|<cwith|2|2|1|-1|cell-bborder|1px>|<cwith|2|2|1|-1|cell-tborder|1px>|<cwith|2|2|3|3|cell-rborder|1px>|<cwith|2|2|5|5|cell-rborder|1px>|<table|<row|<cell|5
   bits>|<cell|3 bits>|<cell|3 bits>|<cell|3 bits>|<cell|2
@@ -141,7 +127,8 @@
   <math|R<rsub|A>\<leqslant\>R<rsub|B>> then
   <math|PC\<leftarrow\>R<rsub|>>>|<cell|non
   signé>>|<row|<cell|01100>|<cell|J>|<cell|>|<cell|lra>|<cell|<math|E\<leftarrow\>PC+d>>|<cell|<math|d>
-  signé>>|<row|<cell|01101>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|01110>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|01111>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|10000>|<cell|K>|<cell|>|<cell|lw>|<cell|<math|R\<leftarrow\>mem<around*|(|R<rprime|'>+d|)>>
+  signé>>|<row|<cell|01101>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|01110>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|01111>|<cell|>|<cell|>|<cell|hlt>|<cell|halt
+  microprocessor (infinite loop)>|<cell|>>|<row|<cell|10000>|<cell|K>|<cell|>|<cell|lw>|<cell|<math|R\<leftarrow\>mem<around*|(|R<rprime|'>+d|)>>
   (16 bits)>|<cell|>>|<row|<cell|10001>|<cell|K>|<cell|>|<cell|sw>|<cell|<math|mem<around*|(|R<rprime|'>+d|)>\<leftarrow\>R>
   (16 bits)>|<cell|>>|<row|<cell|10010>|<cell|K>|<cell|>|<cell|lb>|<cell|<math|R<rsub|lo>\<leftarrow\>mem<around*|(|R<rprime|'>+d|)>
   ; R<rsub|hi>\<leftarrow\>0> (8 bits)>|<cell|>>|<row|<cell|10011>|<cell|K>|<cell|>|<cell|sb>|<cell|<math|mem<around*|(|R<rprime|'>+d|)>\<leftarrow\>R<rsub|lo>>
@@ -153,6 +140,9 @@
   ; R<rsub|hi>\<leftarrow\>0>>|<cell|>>|<row|<cell|11010>|<cell|I>|<cell|>|<cell|liu>|<cell|<math|R<rsub|hi>\<leftarrow\>d>>|<cell|>>|<row|<cell|11011>|<cell|I>|<cell|>|<cell|liuz>|<cell|<math|R<rsub|hi>\<leftarrow\>d
   ; R<rsub|lo>\<leftarrow\>0>>|<cell|>>|<row|<cell|11100>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|11101>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|11110>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|11111>|<cell|>|<cell|>|<cell|nop<samp|>>|<cell|<math|\<varnothing\>>>|<cell|>>>>>|Instructions
   reconnues par le microproceseur>
+
+  L'assembleur propose également quelques instructions \S étendues \T
+  permettant de faciliter la programmation :
 
   <big-table|<tabular|<tformat|<cwith|1|1|1|-1|cell-bborder|1px>|<table|<row|<cell|<strong|Nom>>|<cell|<strong|Action>>|<cell|<strong|Code
   assembleur de base équivalent>>>|<row|<cell|push
@@ -183,36 +173,37 @@
 <\references>
   <\collection>
     <associate|auto-1|<tuple|1|1>>
-    <associate|auto-10|<tuple|2|1>>
-    <associate|auto-11|<tuple|3|2>>
-    <associate|auto-12|<tuple|4|3>>
-    <associate|auto-13|<tuple|5|?>>
-    <associate|auto-14|<tuple|4|?>>
-    <associate|auto-15|<tuple|3|?>>
+    <associate|auto-10|<tuple|4|2>>
+    <associate|auto-11|<tuple|5|2>>
+    <associate|auto-12|<tuple|4|2>>
+    <associate|auto-13|<tuple|3|3>>
+    <associate|auto-14|<tuple|4|4>>
+    <associate|auto-15|<tuple|4|?>>
     <associate|auto-16|<tuple|4|?>>
+    <associate|auto-17|<tuple|5|?>>
     <associate|auto-2|<tuple|2|1>>
-    <associate|auto-3|<tuple|2.1|1>>
-    <associate|auto-4|<tuple|1|1>>
-    <associate|auto-5|<tuple|2.2|1>>
-    <associate|auto-6|<tuple|2|1>>
-    <associate|auto-7|<tuple|3|1>>
-    <associate|auto-8|<tuple|3.1|1>>
-    <associate|auto-9|<tuple|1|1>>
+    <associate|auto-3|<tuple|1|2>>
+    <associate|auto-4|<tuple|2|2>>
+    <associate|auto-5|<tuple|3|2>>
+    <associate|auto-6|<tuple|3.1|2>>
+    <associate|auto-7|<tuple|1|2>>
+    <associate|auto-8|<tuple|2|2>>
+    <associate|auto-9|<tuple|3|2>>
   </collection>
 </references>
 
 <\auxiliary>
   <\collection>
     <\associate|table>
-      <tuple|normal|Memory map|<pageref|auto-4>>
+      <tuple|normal|Memory map|<pageref|auto-3>>
 
-      <tuple|normal|Memory map|<pageref|auto-6>>
+      <tuple|normal|Addresses MMIO|<pageref|auto-4>>
 
       <tuple|normal|Instructions reconnues par le
-      microproceseur|<pageref|auto-15>>
+      microproceseur|<pageref|auto-13>>
 
       <tuple|normal|Instructions supplémentaires (produites par
-      l'assembleur)|<pageref|auto-16>>
+      l'assembleur)|<pageref|auto-14>>
     </associate>
     <\associate|toc>
       <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|Registres>
@@ -223,45 +214,37 @@
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-2><vspace|0.5fn>
 
-      <with|par-left|<quote|1.5fn>|Modèle simple
-      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-3>>
-
-      <with|par-left|<quote|1.5fn>|Modèle avec affichage bitmapé
-      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-5>>
-
       <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|Jeu
       d'instruction> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-7><vspace|0.5fn>
+      <no-break><pageref|auto-5><vspace|0.5fn>
 
       <with|par-left|<quote|1.5fn>|Types d'instructions
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-8>>
+      <no-break><pageref|auto-6>>
 
       <with|par-left|<quote|6fn>|Format de base
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-9><vspace|0.15fn>>
+      <no-break><pageref|auto-7><vspace|0.15fn>>
 
       <with|par-left|<quote|6fn>|Format <with|mode|<quote|math>|R>
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-10><vspace|0.15fn>>
+      <no-break><pageref|auto-8><vspace|0.15fn>>
 
       <with|par-left|<quote|6fn>|Format <with|mode|<quote|math>|I>
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-11><vspace|0.15fn>>
+      <no-break><pageref|auto-9><vspace|0.15fn>>
 
       <with|par-left|<quote|6fn>|Format K
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-12><vspace|0.15fn>>
+      <no-break><pageref|auto-10><vspace|0.15fn>>
 
       <with|par-left|<quote|6fn>|Format <with|mode|<quote|math>|J>
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-13><vspace|0.15fn>>
+      <no-break><pageref|auto-11><vspace|0.15fn>>
 
       <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|Tableau
       d'instructions> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-14><vspace|0.5fn>
+      <no-break><pageref|auto-12><vspace|0.5fn>
     </associate>
   </collection>
 </auxiliary>
