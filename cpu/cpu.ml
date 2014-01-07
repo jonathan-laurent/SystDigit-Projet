@@ -17,6 +17,7 @@ let cpu_ram ra we wa d =
         0x8000 to 0xFFFF is RAM *)
     let read_data = zeroes 8 in
 
+    (* ROM chip *)
     let ra_hi1 = ra ** 15 in
     let ra_lo1 = ra % (0, 14) in
     let ra_hi2 = ra ** 14 in
@@ -25,7 +26,7 @@ let cpu_ram ra we wa d =
     let rd_rom = rom "ROM0" 14 8 ra_lo2 in
     let read_data = mux read_rom read_data rd_rom in
 
-
+    (* RAM chip *)
     let read_ram = ra_hi1 in
     let wa_hi1 = wa ** 15 in
     let wa_lo1 = wa % (0, 14) in
@@ -33,6 +34,7 @@ let cpu_ram ra we wa d =
     let rd_ram = ram 15 8 ra_lo1 we_ram wa_lo1 d in
     let read_data = mux read_ram read_data rd_ram in
 
+    (* MMIO *)
     let read_tick = eq_c 16 ra 0x4000 in
     let next_tick, save_next_tick = loop 8 in
     let tick = nadder 8 (reg 8 next_tick) (get "tick" ++ zeroes 7) in

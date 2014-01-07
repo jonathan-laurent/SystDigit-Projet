@@ -86,7 +86,9 @@
 
   <section|Jeu d'instruction>
 
-  Les instructions sont codées sur 16 bits.
+  Les instructions sont codées sur 16 bits. Les tableaux suivants montrent
+  les instructions avec les poids forts à gauche et les poids faibles à
+  droite.
 
   <subsection|Types d'instructions>
 

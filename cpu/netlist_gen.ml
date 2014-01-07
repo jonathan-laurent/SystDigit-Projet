@@ -16,9 +16,8 @@ let add p id eq size =
     assert (not (Env.mem id p.p_vars) 
         || (Env.find id p.p_vars = size));
     assert (not (List.mem_assoc id p.p_eqs));
-    {   p_eqs = (id, eq)::p.p_eqs;
-        p_inputs = p.p_inputs;
-        p_outputs = p.p_outputs;
+    {   p with
+        p_eqs = (id, eq)::p.p_eqs;
         p_vars = Env.add id size p.p_vars }
 
 let get id =
@@ -195,9 +194,7 @@ let program entries outputs =
                 p, outputs)
         (p, []) outputs
     in
-    {   p_inputs = p.p_inputs;
-        p_eqs = p.p_eqs;
-        p_vars = p.p_vars;
+    {   p with
         p_outputs = List.rev outputs }
 
 

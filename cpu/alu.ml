@@ -51,7 +51,7 @@ let rec nadder_with_carry n a b c_in =
 
 let nadder n a b =
     let a, b = nadder_with_carry n a b (const "0") in
-    ignore b a
+    b ^. a
 
 let rec nsubber n a b =
     zeroes n (* TODO *)
