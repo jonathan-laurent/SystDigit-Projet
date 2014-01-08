@@ -5,7 +5,6 @@ type reg = int
 type imm =
 	| Imm of int
 	| Lab of string
-	| Labu of string
 
 type fmt_r =
 	| Add
@@ -61,7 +60,8 @@ type instr =
 
 module Imap = Map.Make(String)
 
-type program = { text : instr list; data : (int * bool) list; lbls : int Imap.t }
+type program = { text : instr list; data : (int * bool) list;
+	lbls : (int * bool) Imap.t }
 
 let keywords_r = [
 		"add",Add;
