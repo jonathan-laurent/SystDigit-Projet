@@ -1,3 +1,5 @@
+exception Asm_error of string
+
 type reg = int
 
 type imm =
@@ -55,6 +57,7 @@ type instr =
 	| Liu of (reg * imm)
 	| Liuz of (reg * imm)
 	| Lra of imm
+    | TwoRawBytes of (int * int)
 
 module Imap = Map.Make(String)
 

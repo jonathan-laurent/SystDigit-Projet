@@ -5,6 +5,7 @@
 csim/csim
 sched/sched
 monitor/mon
+asm/asm
 *.o
 *.ps
 */*.net

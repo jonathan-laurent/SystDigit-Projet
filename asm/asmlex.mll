@@ -23,10 +23,14 @@
 		"liu",LIU;
 		"liuz",LIUZ;
 		"lra",LRA;
+        "la",LA;
 		"li",LI;
 		"move",MOVE;
 		"jz",JZ;
-		"jnz",JNZ
+		"jnz",JNZ;
+        "byte",BYTE;
+        "word",WORD;
+        "asciiz",ASCIIZ;
 	]
 	
 	let regs = [
@@ -49,8 +53,8 @@
 			let v =
 				let c = Char.code n.[i] in
 				if c >= Char.code '0' && c <= Char.code '9' then c - (Char.code '0')
-				else if c >= Char.code 'a' && c <= Char.code 'f' then c - (Char.code 'a')
-				else c - (Char.code 'A') in
+				else if c >= Char.code 'a' && c <= Char.code 'f' then c - (Char.code 'a') + 10
+				else c - (Char.code 'A') + 10 in
 			res := !res + v
 		done;
 		!res
@@ -84,7 +88,8 @@ rule token = parse
 		{ INT (read_16 n) }
 	| (digit)+ as n { INT (int_of_string n) }
 	| "0b" (['0' '1']+ as n) { INT (read_2 n) }
-	| ['A'-'Z']+ as name { REG (List.assoc name regs) }
+    | '"' { STR (lex_str "" lexbuf) }
+	| ['A'-'Z']+ as name { try REG (List.assoc name regs) with Not_found -> raise (Asm_error ("no reg " ^ name))}
 	| '$' (['0'-'7'] as n) { REG (Char.code n - (Char.code '0')) }
 	| ".text" { TEXT }
 	| ".data" { DATA }
@@ -96,3 +101,11 @@ and comment = parse
 	| eof { EOF }
 	| '\n' { Lexing.new_line lexbuf; token lexbuf }
 	| _ { comment lexbuf }
+
+and lex_str q = parse
+    | eof { q }
+    | '"' { q }
+    | "\\\"" { lex_str (q ^ "\"") lexbuf }
+    | "\\\\" { lex_str (q ^ "\\") lexbuf }
+    | "\\n" { lex_str (q ^ "\n") lexbuf }
+    | _ as c { lex_str (q ^ String.make 1 c) lexbuf }

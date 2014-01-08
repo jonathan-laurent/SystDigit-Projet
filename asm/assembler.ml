@@ -95,10 +95,10 @@ let print_program p =
 		| Jal i -> let v = value2 i in j 0b01001 v, sprintf "jal %s" (its i)
 		| Jr reg -> r (0b01010,0) reg 0 0, sprintf "jr %s" (rts reg)
 		| Jalr reg -> r (0b01010,1) reg 0 0, sprintf "jalr %s" (rts reg)
-		| Lw (r1,r2,i) -> k 0b10000 r1 r2 i, sprintf "lw %s %s %d" (rts r1) (rts r2) i
-		| Sw (r1,r2,i) -> k 0b10001 r1 r2 i, sprintf "sw %s %s %d" (rts r1) (rts r2) i
-		| Lb (r1,r2,i) -> k 0b10010 r1 r2 i, sprintf "lb %s %s %d" (rts r1) (rts r2) i
-		| Sb (r1,r2,i) -> k 0b10011 r1 r2 i, sprintf "sb %s %s %d" (rts r1) (rts r2) i
+		| Lw (r1,r2,i) -> k 0b10000 r1 r2 i, sprintf "lw %s %d(%s)" (rts r1) i (rts r2)
+		| Sw (r1,r2,i) -> k 0b10001 r1 r2 i, sprintf "sw %s %d(%s)" (rts r1) i (rts r2)
+		| Lb (r1,r2,i) -> k 0b10010 r1 r2 i, sprintf "lb %s %d(%s)" (rts r1) i (rts r2)
+		| Sb (r1,r2,i) -> k 0b10011 r1 r2 i, sprintf "sb %s %d(%s)" (rts r1) i (rts r2)
 		| Lra i -> j 0b01100 (value2 i), sprintf "lra %s" (its i)
 		| Lil (r,i) -> (0b11000 lsl 11) lxor (r lsl 8) lxor (value i land 0xFF),
 			sprintf "lil %s %s" (rts r) (its i)
@@ -107,7 +107,9 @@ let print_program p =
 		| Liu (r,i) -> (0b11010 lsl 11) lxor (r lsl 8) lxor (value i land 0xFF),
 			sprintf "liu %s %s" (rts r) (its i)
 		| Liuz (r,i) -> (0b11011 lsl 11) lxor (r lsl 8) lxor (value i land 0xFF),
-			sprintf "liuz %s %s" (rts r) (its i) in
+			sprintf "liuz %s %s" (rts r) (its i)
+        | TwoRawBytes(a, b) -> (a) lxor (b lsl 8), sprintf "bytes %d %d" a b
+        in
 	let n = List.length p.text in
 	let rev_lbls = Array.make n "" in
 	Imap.iter (fun l v ->
