@@ -138,7 +138,7 @@
   ; R<rsub|hi>\<leftarrow\>0> (8 bits)>|<cell|>>|<row|<cell|10111>|<cell|R>|<cell|*>|<cell|sbr>|<cell|<math|mem<around*|(|R<rsub|A>+R<rsub|B>|)>\<leftarrow\>R<rsub|lo><rsup|>>
   (8 bits)>|<cell|>>|<row|<cell|11000>|<cell|I>|<cell|>|<cell|lil>|<cell|<math|R<rsub|lo>\<leftarrow\>d>>|<cell|>>|<row|<cell|11001>|<cell|I>|<cell|>|<cell|lilz>|<cell|<math|R<rsub|lo>\<leftarrow\>d
   ; R<rsub|hi>\<leftarrow\>0>>|<cell|>>|<row|<cell|11010>|<cell|I>|<cell|>|<cell|liu>|<cell|<math|R<rsub|hi>\<leftarrow\>d>>|<cell|>>|<row|<cell|11011>|<cell|I>|<cell|>|<cell|liuz>|<cell|<math|R<rsub|hi>\<leftarrow\>d
-  ; R<rsub|lo>\<leftarrow\>0>>|<cell|>>|<row|<cell|11100>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|11101>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|11110>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|11111>|<cell|>|<cell|>|<cell|nop<samp|>>|<cell|<math|\<varnothing\>>>|<cell|>>>>>|Instructions
+  ; R<rsub|lo>\<leftarrow\>0>>|<cell|>>|<row|<cell|11100>|<cell|>|<cell|<em|>>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|11101>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|11110>|<cell|>|<cell|>|<cell|<em|nop>>|<cell|>|<cell|>>|<row|<cell|11111>|<cell|>|<cell|>|<cell|nop<samp|>>|<cell|<math|\<varnothing\>>>|<cell|>>>>>|Instructions
   reconnues par le microproceseur>
 
   L'assembleur propose également quelques instructions \S étendues \T
@@ -161,12 +161,16 @@
   R, E, Z>>|<row|<cell|jnz <math|R>, addr>|<cell|if <math|R\<neq\>0> then
   <math|PC\<leftarrow\>addr>>|<cell|lil E, lo(addr) ; liu E, hi(addr) OU lilz
   E, addr>>|<row|<cell|>|<cell|>|<cell|jner R, E, Z>>>>>|Instructions
-  supplémentaires (produites par l'assembleur)>\ 
+  supplémentaires (produites par l'assembleur)>
+
+  \ 
 </body>
 
 <\initial>
   <\collection>
     <associate|language|french>
+    <associate|page-medium|paper>
+    <associate|page-screen-margin|false>
   </collection>
 </initial>
 
@@ -177,8 +181,8 @@
     <associate|auto-11|<tuple|5|2>>
     <associate|auto-12|<tuple|4|2>>
     <associate|auto-13|<tuple|3|3>>
-    <associate|auto-14|<tuple|4|4>>
-    <associate|auto-15|<tuple|4|?>>
+    <associate|auto-14|<tuple|4|5>>
+    <associate|auto-15|<tuple|5|?>>
     <associate|auto-16|<tuple|4|?>>
     <associate|auto-17|<tuple|5|?>>
     <associate|auto-2|<tuple|2|1>>
