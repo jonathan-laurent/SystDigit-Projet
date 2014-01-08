@@ -3,7 +3,7 @@ IN=graph.ml main.ml netlist_ast.ml netlist_dumb.ml netlist_lexer.mll netlist.ml 
 all: sched
 
 sched: $(IN)
-	ocamlbuild -libs unix main.native
+	ocamlbuild main.native
 	mv main.native sched
 
 clean:

@@ -8,7 +8,7 @@ SIM=../csim/csim
 MON=../monitor/mon
 
 all: _build/cpu_opt.dumb
-	$(MON) $(SIM) -rom ROM0 prog_rom0.rom $<
+	$(MON) $(SIM) -rom ROM0 prog_test1.rom $<
 
 %.sim: _build/%.dumb
 	$(SIM) -n 12 $<
