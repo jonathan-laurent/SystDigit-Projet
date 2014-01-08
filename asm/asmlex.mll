@@ -23,7 +23,6 @@
 		"liu",LIU;
 		"liuz",LIUZ;
 		"lra",LRA;
-        "la",LA;
 		"li",LI;
 		"move",MOVE;
 		"jz",JZ;

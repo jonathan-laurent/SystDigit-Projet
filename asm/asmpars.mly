@@ -38,7 +38,7 @@
 %}
 
 %token EOF,COLON,TEXT,DATA,BYTE,WORD,ASCIIZ,MINUS,MOVE,JZ,JNZ,LP,RP
-%token POP,PUSH,INCRI,SHI,JJ,JAL,JR,JALR,LW,SW,LB,SB,NOT,LIL,LILZ,LIU,LIUZ,LRA,LA,LI
+%token POP,PUSH,INCRI,SHI,JJ,JAL,JR,JALR,LW,SW,LB,SB,NOT,LIL,LILZ,LIU,LIUZ,LRA,LI
 %token<Asm.reg> REG
 %token<Asm.fmt_r> ROP,RIOP
 %token<string> ID
@@ -120,7 +120,6 @@ _instr:
   | LRA i=int { assert (i > -(1 lsl 10) && i < 1 lsl 10);
     add pc 2; [Lra (Imm i)] }
   | LRA l=ID { add pc 2; [Lra (Lab l)] }
-  | LA r=REG l=ID { li false r (Lab l) }
   | LIL r=REG i=int { add pc 2; [Lil (r,Imm i)] } 
   | LILZ r=REG i=int { add pc 2; [Lilz (r,Imm i)] }
   | LIU r=REG i=int { add pc 2; [Liu (r,Imm i)] }

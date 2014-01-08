@@ -1,12 +1,11 @@
 .text
-    add D Z Z
 init:
     liuz B 0x40
     lw B 0(B)
     jz B init
     add D D B
     push D
-    la A msgtick
+    li A msgtick
     jal ser_out_msg
     pop D
     j init
