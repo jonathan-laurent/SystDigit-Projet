@@ -61,6 +61,7 @@ typedef struct {
 
 void disp_init();
 void disp_display(t_mon *mon);
+void disp_display_ser(t_mon *mon);
 void disp_finish();
 
 void handle_kbd(t_mon *mon);

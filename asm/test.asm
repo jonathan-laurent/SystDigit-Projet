@@ -4,6 +4,7 @@
 init:
     liuz B 0x40
     lw B 0(B)
+    jz B init
     add D D B
     push D
     la A msgtick
@@ -12,13 +13,14 @@ init:
     j init
 
 ser_out_msg:
-    lb B 0(A)
-    jz B ser_out_msg_ret
     liuz C 0x41
     lil C 0x02
+ser_out_msg_loop:
+    lb B 0(A)
+    jz B ser_out_msg_ret
     sb B 0(C)
     incri A 1
-    j ser_out_msg
+    j ser_out_msg_loop
 ser_out_msg_ret:
     jr RA
 

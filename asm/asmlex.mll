@@ -53,8 +53,8 @@
 			let v =
 				let c = Char.code n.[i] in
 				if c >= Char.code '0' && c <= Char.code '9' then c - (Char.code '0')
-				else if c >= Char.code 'a' && c <= Char.code 'f' then c - (Char.code 'a')
-				else c - (Char.code 'A') in
+				else if c >= Char.code 'a' && c <= Char.code 'f' then c - (Char.code 'a') + 10
+				else c - (Char.code 'A') + 10 in
 			res := !res + v
 		done;
 		!res

@@ -285,4 +285,5 @@ void mon_step(t_mon *mon) {
     }
     
     mon->step++;
+    disp_display_ser(mon);
 }

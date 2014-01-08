@@ -6,6 +6,8 @@ let ser_in_busy, save_ser_in_busy = loop 1
 
 let dbg_ra, save_dbg_ra = loop 16
 let dbg_read_data, save_dbg_read_data = loop 8
+let dbg_wa, save_dbg_wa = loop 16
+let dbg_write_data, save_dbg_write_data = loop 8
 
 let cpu_ram ra we wa d =
     (*  Ram chip has word size = 8 bits and address size = 16 bits
@@ -61,6 +63,8 @@ let cpu_ram ra we wa d =
 
     save_dbg_ra ra ^.
     save_dbg_read_data read_data ^.
+    save_dbg_wa wa ^.
+    save_dbg_write_data d ^.
     read_data
     
 
@@ -183,6 +187,7 @@ let rl, rh, i, ex, exf, pc =
     let instr_j = exec ^& eq_c 5 i_i 0b01000 in
     let next_pc = mux instr_j next_pc (nadder 16 pc (sign_extend 11 16 i_jd)) in
     (* instruction : jal *)
+    let link_pc = next_pc in
     let instr_jal = exec ^& eq_c 5 i_i 0b01001 in
     let next_pc = mux instr_jal next_pc (nadder 16 pc (sign_extend 11 16 i_jd)) in
     let instr_jalxx = instr_jal in
@@ -196,7 +201,7 @@ let rl, rh, i, ex, exf, pc =
     let next_pc = mux cond_jxxr next_pc v_r in
     (* prologue for jal/jalr *)
     let wr = mux instr_jalxx wr (const "011") in
-    let rwd = mux instr_jalxx rwd next_pc in
+    let rwd = mux instr_jalxx rwd link_pc in
 
     (* instruction : lra *)
     let instr_lra = exec ^& eq_c 5 i_i 0b01100 in
@@ -287,11 +292,13 @@ let p =
         [
             "read_ilow", 1, rl;
             "read_ihi", 1, rh;
-            "exec_instr", 1, ex;
-            "exec_finished", 1, exf;
-            "instruction", 16, i;
+            "ex_instr", 1, ex;
+            "ex_finish", 1, exf;
+            "i", 16, i;
             "ra", 16, dbg_ra;
             "read_data", 8, dbg_read_data;
+            "wa", 16, dbg_wa;
+            "write_data", 8, dbg_write_data;
             "pc", 16, pc;
             "r0_Z", 16, r0;
             "r1_A", 16, r1;

@@ -108,7 +108,7 @@ let print_program p =
 			sprintf "liu %s %s" (rts r) (its i)
 		| Liuz (r,i) -> (0b11011 lsl 11) lxor (r lsl 8) lxor (value i land 0xFF),
 			sprintf "liuz %s %s" (rts r) (its i)
-        | TwoRawBytes(a, b) -> (a lsl 8) lxor b, sprintf "bytes %d %d" a b
+        | TwoRawBytes(a, b) -> (a) lxor (b lsl 8), sprintf "bytes %d %d" a b
         in
 	let n = List.length p.text in
 	let rev_lbls = Array.make n "" in
