@@ -28,9 +28,12 @@
 		"move",MOVE;
 		"jz",JZ;
 		"jnz",JNZ;
-        "byte",BYTE;
-        "word",WORD;
         "asciiz",ASCIIZ;
+		"_clock",INT 0x4000;
+		"_input",INT 0x4100;
+		"_output",INT 0x4102;
+		"word",WORD;
+		"byte",BYTE
 	]
 	
 	let regs = [

@@ -15,7 +15,7 @@
       
   let pc = ref 0
   
-  let ram = ref 0x8000
+  let ram = ref 0
   
   let add r i = r := !r + i
   
@@ -29,14 +29,8 @@
       if c then (add pc 2; [Lilz (r,Imm i)])
       else (add pc 4; [Lilz (r,Imm (i land 0x00FF)); Liu (r,Imm ((i land 0xFF00) lsr 8))])
     | Lab id ->
-      add pc 4; [Lilz (r,Lab id); Liu (r,Labu id)]
-    | _ -> assert false
+      add pc 4; [Lilz (r,Lab id); Liu (r,Lab id)]
     
-  let up = function
-    | Imm i -> Imm i
-    | Lab l -> Labu l
-    | _ -> assert false
-
   let explode s = (* string -> char list *)
     let rec exp i l =
      if i < 0 then l else exp (i - 1) (s.[i] :: l) in
@@ -65,21 +59,18 @@ data:
   DATA d=datas* { d }
   
 datas:
-  | l=label_ram d=datas { d }
+  | labeld d=datas { d }
   | BYTE bs=int* { List.map (fun i -> add ram 1; i,false) bs }
   | WORD bs=int* { List.map (fun i -> add ram 2; i,true) bs }
-  | ASCIIZ s=STR {
-        add ram 1;
-        List.map (fun c -> add ram 1; Char.code c, false) (explode s) @ [0, false]
-        }
   
-label_ram:
-  id=ID COLON { lbls2  := Imap.add id !ram !lbls2; id }
-label_pc:
-  id=ID COLON { lbls2 := Imap.add id !pc !lbls2; id }
-  
+labeli:
+  id=ID COLON { lbls2 := Imap.add id (!pc,true) !lbls2 }
+
+labeld:
+  id=ID COLON { lbls2 := Imap.add id (!ram,false) !lbls2 }
+
 instr:
-  | l=label_pc i=instr { i }
+  | labeli i=instr { i }
   | i=_instr { i }
   
 _instr:
