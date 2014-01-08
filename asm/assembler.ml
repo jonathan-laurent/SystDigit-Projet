@@ -74,18 +74,18 @@ let code = function
 let its = function
 	| Imm i -> string_of_int i
 	| Lab l -> l
-	| Labu l -> l
 
 let print_program p =
 	let pc = ref 0 in
 	let value = function
 		| Imm i -> i
-		| Lab l -> Imap.find l p.lbls
-		| Labu l -> (Imap.find l p.lbls) lsr 8 in
+		| Lab l -> fst (Imap.find l p.lbls) in
 	let value2 = function
 		| Imm i -> i
-		| Lab l -> Imap.find l p.lbls - !pc
-		| _ -> assert false in
+		| Lab l -> fst (Imap.find l p.lbls) - !pc in
+	let value3 = function
+		| Imm i -> i
+		| Lab l -> (byte 16 (fst (Imap.find l p.lbls))) lsr 8 in
 	let get_reps = function
 		| R (o,r1,r2,r3) -> r (code o) r1 r2 r3,
 			sprintf "%s %s %s %s" (List.assoc o rev_keywords) (rts r1) (rts r2) (rts r3)
@@ -95,23 +95,23 @@ let print_program p =
 		| Jal i -> let v = value2 i in j 0b01001 v, sprintf "jal %s" (its i)
 		| Jr reg -> r (0b01010,0) reg 0 0, sprintf "jr %s" (rts reg)
 		| Jalr reg -> r (0b01010,1) reg 0 0, sprintf "jalr %s" (rts reg)
-		| Lw (r1,r2,i) -> k 0b10000 r1 r2 i, sprintf "lw %s %s %d" (rts r1) (rts r2) i
-		| Sw (r1,r2,i) -> k 0b10001 r1 r2 i, sprintf "sw %s %s %d" (rts r1) (rts r2) i
-		| Lb (r1,r2,i) -> k 0b10010 r1 r2 i, sprintf "lb %s %s %d" (rts r1) (rts r2) i
-		| Sb (r1,r2,i) -> k 0b10011 r1 r2 i, sprintf "sb %s %s %d" (rts r1) (rts r2) i
+		| Lw (r1,r2,i) -> k 0b10000 r1 r2 i, sprintf "lw %s %d(%s)" (rts r1) i (rts r2)
+		| Sw (r1,r2,i) -> k 0b10001 r1 r2 i, sprintf "sw %s %d(%s)" (rts r1) i (rts r2)
+		| Lb (r1,r2,i) -> k 0b10010 r1 r2 i, sprintf "lb %s %d(%s)" (rts r1) i (rts r2)
+		| Sb (r1,r2,i) -> k 0b10011 r1 r2 i, sprintf "sb %s %d(%s)" (rts r1) i (rts r2)
 		| Lra i -> j 0b01100 (value2 i), sprintf "lra %s" (its i)
-		| Lil (r,i) -> (0b11000 lsl 11) lxor (r lsl 8) lxor (value i land 0xFF),
+		| Lil (r,i) -> (0b11000 lsl 11) lxor (r lsl 8) lxor ((byte 8 (value i)) land 0xFF),
 			sprintf "lil %s %s" (rts r) (its i)
-		| Lilz (r,i) -> (0b11001 lsl 11) lxor (r lsl 8) lxor (value i land 0xFF),
+		| Lilz (r,i) -> (0b11001 lsl 11) lxor (r lsl 8) lxor ((byte 8 (value i)) land 0xFF),
 			sprintf "lilz %s %s" (rts r) (its i)
-		| Liu (r,i) -> (0b11010 lsl 11) lxor (r lsl 8) lxor (value i land 0xFF),
+		| Liu (r,i) -> (0b11010 lsl 11) lxor (r lsl 8) lxor ((byte 8 (value3 i)) land 0xFF),
 			sprintf "liu %s %s" (rts r) (its i)
-		| Liuz (r,i) -> (0b11011 lsl 11) lxor (r lsl 8) lxor (value i land 0xFF),
+		| Liuz (r,i) -> (0b11011 lsl 11) lxor (r lsl 8) lxor ((byte 8 (value3 i)) land 0xFF),
 			sprintf "liuz %s %s" (rts r) (its i) in
 	let n = List.length p.text in
 	let rev_lbls = Array.make n "" in
-	Imap.iter (fun l v ->
-		if v/2 < n then rev_lbls.(v/2) <- rev_lbls.(v/2) ^ " " ^ l) p.lbls;
+	Imap.iter (fun l (v,t) ->
+		if t then rev_lbls.(v/2) <- rev_lbls.(v/2) ^ " " ^ l) p.lbls;
 	let f instr =
 		if rev_lbls.(!pc/2) <> "" then
 			printf "\t#%s:\n" rev_lbls.(!pc/2);
@@ -123,11 +123,19 @@ let print_program p =
 	let n2 = List.fold_left (fun n (_,w) -> if w then n + 2 else n + 1) 0 p.data in
 	if n2 > 0 then (
 		printf "\n%d %d\n" n2 8;
-		let f2 = function
-			| (b,true) ->
-				printf "%s\n" (wts (byte 16 b))
-			| (b,false)->
-				printf "%s\n" (bts (byte 8 b)) in
+		let rev_lbls = Array.make n2 "" in
+		Imap.iter (fun l (v,t) ->
+			if not t then rev_lbls.(v) <- rev_lbls.(v) ^ " " ^ l) p.lbls;
+		pc := 0;
+		let f2 (b,w) =
+			if rev_lbls.(!pc) <> "" then
+				printf "\t#%s:\n" rev_lbls.(!pc);
+			if w then (
+				printf "%s\n" (wts (byte 16 b));
+				pc := !pc + 2
+			) else (
+				printf "%s\n" (bts (byte 8 b));
+				pc := !pc + 1) in
 		List.iter f2 p.data
 	);
 	printf "\n"

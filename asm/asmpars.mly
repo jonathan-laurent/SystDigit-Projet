@@ -15,7 +15,7 @@
 			
 	let pc = ref 0
 	
-	let ram = ref 0x8000
+	let ram = ref 0
 	
 	let add r i = r := !r + i
 	
@@ -29,13 +29,8 @@
 			if c then (add pc 2; [Lilz (r,Imm i)])
 			else (add pc 4; [Lilz (r,Imm (i land 0x00FF)); Liu (r,Imm ((i land 0xFF00) lsr 8))])
 		| Lab id ->
-			add pc 4; [Lilz (r,Lab id); Liu (r,Labu id)]
-		| _ -> assert false
+			add pc 4; [Lilz (r,Lab id); Liu (r,Lab id)]
 		
-	let up = function
-		| Imm i -> Imm i
-		| Lab l -> Labu l
-		| _ -> assert false
 %}
 
 %token EOF,COLON,TEXT,DATA,BYTE,WORD,MINUS,MOVE,JZ,JNZ,LP,RP
@@ -59,15 +54,18 @@ data:
 	DATA d=datas* { d }
 	
 datas:
-	| l=label d=datas { lbls2 := Imap.add l !ram !lbls2; d }
+	| labeld d=datas { d }
 	| BYTE bs=int* { List.map (fun i -> add ram 1; i,false) bs }
 	| WORD bs=int* { List.map (fun i -> add ram 2; i,true) bs }
 	
-label:
-	id=ID COLON { id }
-	
+labeli:
+	id=ID COLON { lbls2 := Imap.add id (!pc,true) !lbls2 }
+
+labeld:
+	id=ID COLON { lbls2 := Imap.add id (!ram,false) !lbls2 }
+
 instr:
-	| l=label i=instr { lbls2 := Imap.add l !pc !lbls2; i }
+	| labeli i=instr { i }
 	| i=_instr { i }
 	
 _instr:
