@@ -1,5 +1,4 @@
 .text
-    liuz SP 0xFF
     add D Z Z
 init:
     liuz B 0x40
