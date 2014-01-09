@@ -82,7 +82,7 @@ void mon_loop(t_mon *mon) {
 
     int displayer_steps = 0;
 
-    while (mon->status != MS_FINISH) {
+    while (1) {
         handle_kbd(mon);
         if (mon->status == MS_AUTO) {
             mon_step(mon);
@@ -125,8 +125,10 @@ void mon_loop(t_mon *mon) {
             }
             int sleep = 1000000 / mon->target_freq - mon->calc_time_usec;
             if (sleep > 0) usleep(sleep);
-        } else {
+        } else if (mon->status == MS_RUN) {
             usleep(10000);
+        } else {
+            break;
         }
     }
 }
@@ -266,12 +268,19 @@ void mon_step(t_mon *mon) {
     }
     
     // Send inputs to simulator
+    fprintf(mon->to_sim, "FEED\n");
     for (i = 0; i < mon->n_inputs; i++) {
         fprintf(mon->to_sim, "%s\n", mon->inputs[i].value);
     }
     fflush(mon->to_sim);
 
     // Read outputs from simulator
+    int magic;
+    fscanf(mon->from_sim, " %x", &magic);
+    if (magic != 0xFED) {
+        mon->status = MS_PERROR;
+        return;
+    }
     for (i = 0; i < mon->n_outputs; i++) {
         fscanf(mon->from_sim, " %s %s %d",
             mon->outputs[i].name,

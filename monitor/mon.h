@@ -20,6 +20,7 @@ typedef struct {
 } t_input;
 
 typedef enum {
+    MS_PERROR,
     MS_FINISH,
     MS_RUN,
     MS_AUTO,

@@ -74,6 +74,13 @@ void read_inputs(t_machine *m, FILE *stream) {
     t_id var;
     t_program *p = m->prog;
 
+    int magic;
+    fscanf(stream, " %x", &magic);
+    if (magic != 0xFEED) {
+        fprintf(stderr, "(simulator) Protocol error.\n");
+        exit(1);
+    }
+
     if (p->n_inputs == 0) return;       // nothing to do
 
     for (i = 0; i < p->n_inputs; i++) {
@@ -212,6 +219,8 @@ void write_outputs(t_machine *m, FILE *stream) {
     t_id var;
     t_value v, mask;
     t_program *p = m->prog;
+
+    fprintf(stream, "FED\n");
 
     for (i = 0; i < p->n_outputs; i++) {
         var = p->outputs[i];

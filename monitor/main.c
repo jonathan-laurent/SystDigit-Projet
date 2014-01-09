@@ -36,6 +36,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "(simulator) Could not open mon2sim for reading (%s).\n", strerror(errno));
             return 1;
         }
+        fprintf(stderr, "(simulator) Syncronization with monitor apparently OK.\n");
         execv (argv[1], argv + 1);
     }
 
@@ -55,6 +56,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "\nError while launching simulator (%d).\n", err);
         goto finish;
     }
+    fprintf(stderr, "(monitor) Syncronization with simulator apparently OK.\n");
 
     // Setup display
     disp_init();
@@ -64,6 +66,10 @@ int main(int argc, char *argv[]) {
 
     // clean up
     disp_finish();
+
+    if (mon.status == MS_PERROR) {
+        fprintf(stderr, "(monitor) Exiting due to protocol error.\n");
+    }
 
 finish:
     kill(sim_pid, SIGTERM);
