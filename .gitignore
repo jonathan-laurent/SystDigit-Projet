@@ -6,6 +6,7 @@ csim/csim
 sched/sched
 monitor/mon
 asm/asm
+cpu/os.rom
 *.o
 *.ps
 */*.net
