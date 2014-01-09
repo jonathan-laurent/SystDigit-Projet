@@ -53,14 +53,116 @@ let nadder n a b =
     let a, b = nadder_with_carry n a b (const "0") in
     b ^. a
 
-let rec nsubber n a b =
-    zeroes n (* TODO *)
+let neg n a = nadder n (not a) (one n)
 
-let rec nmul n a b =
-    zeroes n, zeroes n (* TODO : retuns lo and hi part of 32-bit answer *)
+let rec nsubber n a b =
+  let r, c = nadder_with_carry n a (not b) (const "1") in
+  c ^. r
+
+
+
+
+(* Some operations on Redundant Binary Representation 
+   Each binary digit is encoded on 2 bits 
+
+   A n-digits number in RBR is written
+   [a_0, a'_0, a_1, a'_1, ..., a_(n-1), a'_(n-1)]
+
+*)
+
+(* [a] and [b] are encoded on 2n bits
+   [c_in] and [c_out] on 2 bits *)
+
+let rec rbr_nadder_with_carry n a b c_in =
+
+  if n = 0 then (zeroes 0), c_in else
+
+  let fa1s, fa1r = fulladder (a ** 1) (b ** 0) (b ** 1) in
+  let fa2s, fa2r = fulladder (c_in ** 1) (a ** 0) fa1s in
+
+  let rec_s, rec_c = 
+    rbr_nadder_with_carry (n - 1) 
+      (a % (2, 2*n - 1)) 
+      (b % (2, 2*n - 1)) 
+      (fa1r ++ fa2r)
+
+  in (c_in ** 0) ++ fa2s ++ rec_s, rec_c
+
+
+let rbr_nadder n a b = 
+  let s, c = rbr_nadder_with_carry n a b (zeroes 2) in
+  c ^. s
+
+
+let bin_of_rbr n a c = 
+
+  (* Split even and odd bits *)
+  let rec split_bits n a =
+    if n = 0 then (zeroes 0, zeroes 0) 
+    else
+      let even, odd = split_bits (n-1) (a % (2, 2*n - 1)) in
+      (a ** 0) ++ even, (a ** 1) ++ odd
+
+  in
+  let a_even, a_odd = split_bits n a in
+
+  nadder n a_even a_odd
+    
+    
+
+(* TODO : move to utils module *)
+let rec range a b = if a > b then [] else a :: (range (a+1) b)
+
+(* Sépare en deux listes de même taille une liste de taille paire *)
+let rec split_list = function
+  | [] -> [], []
+  | [_] -> assert false
+  | x::y::tl -> let a, b = split_list tl in x::a, y::b
+
+(* n must be a power of two *)
+(*
+let nmul n a b =
+
+  let summands = List.map (fun i ->  
+    mux (b ** i)
+      (zeroes (2*n))  
+      ((zeroes i) ++ a ++ (zeroes (n - i)))
+      
+  ) (range 0 (n-1)) in
+
+  
+  let rec sum_list = function
+    | [x] -> x
+    | l -> 
+        let s1, s2 = split_list l in 
+        nadder (2*n) (sum_list s1) (sum_list s2)
+
+  in let r = List.fold_left (nadder (2*n)) (List.hd summands) (List.tl summands) in
+
+
+  (*in 
+  let r = sum_list summands in*)
+  (r % (0, n-1)), (r % (n, 2*n - 1))
+  *)
+
+let nmul n a b =
+  let nn = 2*n in
+  let result = ref (zeroes (nn)) in
+  for i = 0 to n-1 do
+    result := mux (b ** i) !result (nadder nn !result ((zeroes i) ++ a ++ (zeroes (n-i))))
+  done;
+  let r = !result in
+  r % (0, n-1), r % (n, nn-1)
+    
+
+
+
 
 let rec ndiv n a b =
     zeroes n, zeroes n (* TODO : returns quotient and remainder *)
+
+
+
 
 let rec nmulu n a b =
     zeroes n, zeroes n (* TODO : same as nmul but unsigned *)

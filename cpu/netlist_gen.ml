@@ -59,7 +59,12 @@ let ( ++ ) v1 v2 =
             let x1, p = v1 p in
             let x2, p = v2 p in
             let sz1, sz2 = get_size p x1, get_size p x2 in
-            (Avar i), add p i (Econcat (x1, x2)) (sz1 + sz2)
+            if sz1 = 0 then
+              (x2), p
+            else if sz2 = 0 then
+              (x1), p
+            else
+              (Avar i), add p i (Econcat (x1, x2)) (sz1 + sz2)
     
 let ( ^| ) v1 v2 =
     let i = id "" in
@@ -198,66 +203,3 @@ let program entries outputs =
         p_outputs = List.rev outputs }
 
 
-(* Netlist printer *)
-
-let init_string n f =
-    let s = String.make n 'a' in
-    for i = 0 to n - 1 do
-        s.[i] <- f i
-    done;
-    s
-
-(* value to string *)
-let vts bits =
-    init_string (Array.length bits) (fun i ->
-        if bits.(i) then '1' else '0')
-
-(* argument to string *)
-let ats = function
-    | Avar id -> id
-    | Aconst n -> vts n
-    
-let s_op = function
-    | Or -> "OR"
-    | Xor -> "XOR"
-    | And -> "AND"
-    | Nand -> "NAND"
-
-let print oc p =
-    let print_eq oc (s,e) = 
-        let s_e =
-            match e with
-            | Earg a -> ats a
-            | Ereg s -> "REG " ^ s
-            | Enot a -> "NOT " ^ (ats a)
-            | Ebinop (b,a1,a2) -> (s_op b) ^ " " ^ (ats a1) ^ " " ^ (ats a2)
-            | Emux (a1,a2,a3) ->
-                "MUX " ^ (ats a1) ^ " " ^ (ats a2) ^ " " ^ (ats a3)
-            | Erom (n1,n2,a3) ->
-                "ROM " ^ (string_of_int n1) ^ " " ^ (string_of_int n2) ^
-                    " " ^ (ats a3)
-            | Eram (n1,n2,a3,a4,a5,a6) ->
-                "RAM " ^ (string_of_int n1) ^ " " ^ (string_of_int n2) ^
-                    " " ^ (ats a3) ^ " " ^ (ats a4) ^ " " ^ (ats a5) ^
-                    " " ^ (ats a6)
-            | Econcat (a1,a2) -> "CONCAT " ^ (ats a1) ^ " " ^ (ats a2)
-            | Eslice (n1,n2,a3) -> "SLICE " ^ (string_of_int n1) ^ " " ^
-                (string_of_int n2) ^ " " ^ (ats a3)
-            | Eselect (n,a) -> "SELECT " ^ (string_of_int n) ^ " " ^ (ats a) in
-        Printf.fprintf oc "%s = %s\n" s s_e in
-    Printf.fprintf oc "INPUT ";
-    if p.p_inputs <> [] then
-        (Printf.fprintf oc "%s" (List.hd p.p_inputs); List.iter 
-            (Printf.fprintf oc ", %s") (List.tl p.p_inputs));
-    Printf.fprintf oc "\nOUTPUT ";
-    if p.p_outputs <> [] then
-        (Printf.fprintf oc "%s" (List.hd p.p_outputs); List.iter 
-            (Printf.fprintf oc ", %s") (List.tl p.p_outputs));
-    Printf.fprintf oc "\nVAR ";
-    let stts s t = if t = 1 then s else s ^ " : " ^ (string_of_int t) in
-    Pervasives.ignore (Env.fold (fun s t b -> 
-        if b then Printf.fprintf oc "%s" (stts s t)
-        else Printf.fprintf oc ", %s" (stts s t);
-        false) p.p_vars true);
-    Printf.fprintf oc "\nIN\n";
-    List.iter (print_eq oc) p.p_eqs

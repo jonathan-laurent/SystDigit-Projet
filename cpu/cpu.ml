@@ -313,5 +313,5 @@ let p =
             "ser_in_busy", 1, ser_in_busy;
         ]
 
-let () = Netlist_gen.print stdout p
+let () = Netlist_printer.print_program stdout p
 

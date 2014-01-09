@@ -1,5 +1,6 @@
 {
 open Netlist_parser
+open Lexing
 exception Eof
 
 let keyword_list =
@@ -22,10 +23,16 @@ let keyword_list =
   "XOR", XOR;
 ]
 
+let newline lexbuf =
+  let pos = lexbuf.lex_curr_p in
+  lexbuf.lex_curr_p <- 
+    { pos with pos_lnum = pos.pos_lnum + 1; pos_bol = pos.pos_cnum }
+
 }
 
 rule token = parse
-    [' ' '\t' '\n']     { token lexbuf }     (* skip blanks *)
+  | '\n'          { newline lexbuf ; token lexbuf }
+  |  [' ' '\t']     { token lexbuf }     (* skip blanks *)
   | "="            { EQUAL }
   | ":"            { COLON }
   | ","            { COMMA }

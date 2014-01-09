@@ -1,7 +1,5 @@
 type t
 
-val print : out_channel -> Netlist_ast.program -> unit
-
 val get : Netlist_ast.ident -> t
 val loop : int -> (t * (t -> t))
 
