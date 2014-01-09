@@ -1,6 +1,6 @@
 .text
 init:
-    liuz B 0x40
+    li B _clock
     lw B 0(B)
     jz B init
     add D D B
@@ -11,8 +11,7 @@ init:
     j init
 
 ser_out_msg:
-    liuz C 0x41
-    lil C 0x02
+    li C _output
 ser_out_msg_loop:
     lb B 0(A)
     jz B ser_out_msg_ret
