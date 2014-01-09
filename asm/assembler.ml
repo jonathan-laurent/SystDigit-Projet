@@ -2,6 +2,8 @@ open Asm
 open Printf
 open Lexing
 
+exception No_such_label of string
+
 let init_string n f =
 	let res = String.make n 'a' in
 	for i = 0 to n - 1 do res.[i] <- f i done; res
@@ -83,13 +85,13 @@ let print_program p =
 	let pc = ref 0 in
 	let value = function
 		| Imm i -> i
-		| Lab l -> fst (Imap.find l p.lbls) in
+		| Lab l -> try fst (Imap.find l p.lbls) with Not_found -> raise (No_such_label l) in
 	let value2 = function
 		| Imm i -> i
-		| Lab l -> fst (Imap.find l p.lbls) - !pc in
+		| Lab l -> try fst (Imap.find l p.lbls) - !pc with Not_found -> raise (No_such_label l) in
 	let value3 = function
 		| Imm i -> i
-		| Lab l -> (byte 16 (fst (Imap.find l p.lbls))) lsr 8 in
+		| Lab l -> try (byte 16 (fst (Imap.find l p.lbls))) lsr 8 with Not_found -> raise (No_such_label l) in
 	let get_reps = function
 		| R (o,r1,r2,r3) -> r (code o) r1 r2 r3,
 			sprintf "%s %s %s %s" (List.assoc o rev_keywords) (rts r1) (rts r2) (rts r3)

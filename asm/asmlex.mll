@@ -94,6 +94,10 @@ rule token = parse
 					with Not_found -> ID id }
 	| "0x" (((hexdigit)+) as n)
 		{ INT (read_16 n) }
+    | "'\\n'" { INT (Char.code '\n') }
+    | "'\\t'" { INT (Char.code '\t') }
+    | "'\\r'" { INT (Char.code '\r') }
+    | "'" (_ as c) "'" { INT (Char.code c) }
 	| (digit)+ as n { INT (int_of_string n) }
 	| "0b" (['0' '1']+ as n) { INT (read_2 n) }
 	| ['A'-'Z']+ as name { try REG (List.assoc name regs) with Not_found -> raise (Asm_error ("no reg " ^ name))}

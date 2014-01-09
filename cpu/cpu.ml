@@ -56,6 +56,7 @@ let cpu_ram ra we wa d =
     let iser = nonnull 8 ser_in in
     let ser = mux iser ser ser_in in
     let ser_busy = nonnull 8 ser in
+    let ser_busy = mux read_ser ser_busy (const "0") in
     let read_data =
         save_ser_in_busy ser_busy ^.
         save_next_ser (mux read_ser ser (zeroes 8)) ^.
