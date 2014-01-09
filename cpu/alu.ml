@@ -120,7 +120,6 @@ let rec split_list = function
   | x::y::tl -> let a, b = split_list tl in x::a, y::b
 
 (* n must be a power of two *)
-(*
 let nmul n a b =
 
   let summands = List.map (fun i ->  
@@ -137,23 +136,9 @@ let nmul n a b =
         let s1, s2 = split_list l in 
         nadder (2*n) (sum_list s1) (sum_list s2)
 
-  in let r = List.fold_left (nadder (2*n)) (List.hd summands) (List.tl summands) in
-
-
-  (*in 
-  let r = sum_list summands in*)
+  in 
+  let r = sum_list summands in
   (r % (0, n-1)), (r % (n, 2*n - 1))
-  *)
-
-let nmul n a b =
-  let nn = 2*n in
-  let result = ref (zeroes (nn)) in
-  for i = 0 to n-1 do
-    result := mux (b ** i) !result (nadder nn !result ((zeroes i) ++ a ++ (zeroes (n-i))))
-  done;
-  let r = !result in
-  r % (0, n-1), r % (n, nn-1)
-    
 
 
 
