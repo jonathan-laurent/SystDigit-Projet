@@ -23,4 +23,4 @@ ser_out_msg_ret:
     jr RA
 
 msgtick:
-    asciiz "Tick!"
+    ascii "Tick!"
