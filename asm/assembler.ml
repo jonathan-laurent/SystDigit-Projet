@@ -75,6 +75,10 @@ let its = function
 	| Imm i -> string_of_int i
 	| Lab l -> l
 
+let size = function
+	| Byte _ -> 1
+	| _ -> 2
+
 let print_program p =
 	let pc = ref 0 in
 	let value = function
@@ -107,37 +111,29 @@ let print_program p =
 		| Liu (r,i) -> (0b11010 lsl 11) lxor (r lsl 8) lxor ((byte 8 (value3 i)) land 0xFF),
 			sprintf "liu %s %s" (rts r) (its i)
 		| Liuz (r,i) -> (0b11011 lsl 11) lxor (r lsl 8) lxor ((byte 8 (value3 i)) land 0xFF),
-			sprintf "liuz %s %s" (rts r) (its i) in
-	let n = List.length p.text in
+			sprintf "liuz %s %s" (rts r) (its i)
+		| Hlt -> (0b01111 lsl 11),"hlt"
+		| Word w -> (byte 16 w), ""
+		| Byte b -> byte 8 b, ""  in
+	let n = List.fold_left (fun n i -> size i + n) 0 p.text in
 	let rev_lbls = Array.make n "" in
 	Imap.iter (fun l (v,t) ->
-		if t then rev_lbls.(v/2) <- rev_lbls.(v/2) ^ " " ^ l) p.lbls;
+		if t then rev_lbls.(v) <- rev_lbls.(v) ^ " " ^ l) p.lbls;
 	let f instr =
-		if rev_lbls.(!pc/2) <> "" then
-			printf "\t#%s:\n" rev_lbls.(!pc/2);
+		if rev_lbls.(!pc) <> "" then
+			printf "\t#%s:\n" rev_lbls.(!pc);
 		let w,s = get_reps instr in
-		printf "%s\t\t# %s\n" (wts w) s;
-		pc := !pc + 2 in
-	printf "%d %d\n" (2*n) 8;
+		let size = size instr in
+		if size = 2 then (
+			printf "%s" (wts w);
+			if s <> "" then 
+				printf "\t\t# %s\n" s
+			else printf "\n";
+			pc := !pc + 2
+		) else (
+			printf "%s\n" (bts w) ) in
+	printf "%d %d\n" (n) 8;
 	List.iter f p.text;
-	let n2 = List.fold_left (fun n (_,w) -> if w then n + 2 else n + 1) 0 p.data in
-	if n2 > 0 then (
-		printf "\n%d %d\n" n2 8;
-		let rev_lbls = Array.make n2 "" in
-		Imap.iter (fun l (v,t) ->
-			if not t then rev_lbls.(v) <- rev_lbls.(v) ^ " " ^ l) p.lbls;
-		pc := 0;
-		let f2 (b,w) =
-			if rev_lbls.(!pc) <> "" then
-				printf "\t#%s:\n" rev_lbls.(!pc);
-			if w then (
-				printf "%s\n" (wts (byte 16 b));
-				pc := !pc + 2
-			) else (
-				printf "%s\n" (bts (byte 8 b));
-				pc := !pc + 1) in
-		List.iter f2 p.data
-	);
 	printf "\n"
 		
 let print_error e sp ep =

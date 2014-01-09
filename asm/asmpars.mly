@@ -15,7 +15,7 @@
 			
 	let pc = ref 0
 	
-	let ram = ref 0
+	let ram = ref 0x8000
 	
 	let add r i = r := !r + i
 	
@@ -30,14 +30,15 @@
 			else (add pc 4; [Lilz (r,Imm (i land 0x00FF)); Liu (r,Imm ((i land 0xFF00) lsr 8))])
 		| Lab id ->
 			add pc 4; [Lilz (r,Lab id); Liu (r,Lab id)]
-		
+	
 %}
 
-%token EOF,COLON,TEXT,DATA,BYTE,WORD,MINUS,MOVE,JZ,JNZ,LP,RP
+%token EOF,COLON,TEXT,DATA,BYTE,WORD,MINUS,MOVE,JZ,JNZ,LP,RP,HLT,ASCII
 %token POP,PUSH,INCRI,SHI,JJ,JAL,JR,JALR,LW,SW,LB,SB,NOT,LIL,LILZ,LIU,LIUZ,LRA,LI
 %token<Asm.reg> REG
 %token<Asm.fmt_r> ROP,RIOP
 %token<string> ID
+%token<char list> STR
 %token<int> INT
 
 %start<Asm.program> program
@@ -45,18 +46,17 @@
 %%
 
 program:
-	TEXT is=instr* d=data? EOF
+	TEXT is=instr* data? EOF
 	{ { text = List.flatten is;
-		data = (match d with Some l -> List.flatten l | None -> []);
 		lbls = !lbls2 } }
 	
 data:
 	DATA d=datas* { d }
 	
 datas:
-	| labeld d=datas { d }
-	| BYTE bs=int* { List.map (fun i -> add ram 1; i,false) bs }
-	| WORD bs=int* { List.map (fun i -> add ram 2; i,true) bs }
+	| labeld datas { () }
+	| BYTE n=INT { add ram n }
+	| WORD n=INT { add ram (2*n) }
 	
 labeli:
 	id=ID COLON { lbls2 := Imap.add id (!pc,true) !lbls2 }
@@ -127,6 +127,10 @@ _instr:
 		add pc 2; l @ [R (Jner,r,5,0)] }
 	| POP r=REG { add pc 4; [Lw (r,7,0); Incri (7,2)] }
 	| PUSH r=REG { add pc 4; [Incri (7,-2); Sw (r,7,0)] }
+	| BYTE bs=int* { List.map (fun b -> add pc 1; Byte b) bs }
+	| WORD ws=int* { List.map (fun w -> add pc 2; Word w) ws }
+	| HLT { add pc 2; [Hlt] }
+	| ASCII s=STR { List.map (fun c -> add pc 1; Byte (Char.code c)) s }
 	
 imm:
 	| id=ID { Lab id }

@@ -54,10 +54,13 @@ type instr =
 	| Liu of (reg * imm)
 	| Liuz of (reg * imm)
 	| Lra of imm
+	| Byte of int
+	| Word of int
+	| Hlt
 
 module Imap = Map.Make(String)
 
-type program = { text : instr list; data : (int * bool) list;
+type program = { text : instr list;
 	lbls : (int * bool) Imap.t }
 
 let keywords_r = [
@@ -93,3 +96,5 @@ let keywords_r = [
 		"swr",Swr;
 		"sbr",Sbr
 	]
+	
+exception Lexer_error

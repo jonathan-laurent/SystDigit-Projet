@@ -31,7 +31,9 @@
 		"_input",INT 0x4100;
 		"_output",INT 0x4102;
 		"word",WORD;
-		"byte",BYTE
+		"byte",BYTE;
+		"hlt",HLT;
+		"ascii",ASCII
 	]
 	
 	let regs = [
@@ -47,15 +49,19 @@
 		"SP",7
 	]
 	
+	let vald d = Char.code d - (Char.code '0')
+	
+	let valh d =
+		let c = Char.code d in
+		if c >= Char.code '0' && c <= Char.code '9' then c - (Char.code '0')
+		else if c >= Char.code 'a' && c <= Char.code 'f' then c - (Char.code 'a')
+		else c - (Char.code 'A')
+	
 	let read_16 n =
 		let res = ref 0 in
 		for i = 0 to String.length n - 1 do
 			res := 16 * !res;
-			let v =
-				let c = Char.code n.[i] in
-				if c >= Char.code '0' && c <= Char.code '9' then c - (Char.code '0')
-				else if c >= Char.code 'a' && c <= Char.code 'f' then c - (Char.code 'a')
-				else c - (Char.code 'A') in
+			let v = valh n.[i] in
 			res := !res + v
 		done;
 		!res
@@ -68,6 +74,7 @@
 			res := !res + v
 		done;
 		!res
+
 }
 
 let digit = ['0'-'9']
@@ -96,6 +103,25 @@ rule token = parse
 	| '-' { MINUS }
 	| '(' { LP }
 	| ')' { RP }
+	| '"' { str [] lexbuf }
+
+and str acc = parse
+	| "\\\\" { str ('\\' :: acc) lexbuf }
+	| '"' { STR (List.rev ('\000' :: acc)) }
+	| "\\t" { str ('\t' :: acc) lexbuf }
+	| "\\n" { str ('\n' :: acc) lexbuf }
+	| "\\r" { str ('\r' :: acc) lexbuf }
+	| "\\\"" { str ('"' :: acc) lexbuf }
+	| "\\a"  { str ((Char.chr 7) :: acc) lexbuf }
+	| '\\' (digit as d1) (digit as d2) (digit as d3)
+		{ let c = 100 * (vald d1) + 10 * (vald d2) + (vald d3) in
+			str ((Char.chr c) :: acc) lexbuf }
+	| "\\x" (hexdigit as h1) (hexdigit as h2)
+		{ let c = 16 * (valh h1) + (valh h2) in
+			str ((Char.chr c)::acc) lexbuf }
+	| eof { raise Lexer_error }
+	| '\n' { raise Lexer_error }
+	| [^ '\\' '"' '\n'] as c { str (c::acc) lexbuf }
 
 and comment = parse
 	| eof { EOF }
