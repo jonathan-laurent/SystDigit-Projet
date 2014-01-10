@@ -23,17 +23,24 @@
 	
 	let li u r = function
 		| Imm i ->
-			let c =
-				if u then i < 1 lsl 8
-				else i >= -(1 lsl 7) && i < 1 lsl 7 in
-			if c then (add pc 2; [Lilz (r,Imm i)])
-			else (add pc 4; [Lilz (r,Imm (i land 0x00FF)); Liu (r,Imm ((i land 0xFF00) lsr 8))])
+			if u then
+				if i < 1 lsl 8 then (add pc 2; [Lilz (r,Imm i)])
+				else (add pc 4; [Lil (r,Imm (i land 0x00FF)); Liu (r,Imm ((i land 0xFF00) lsr 8))])
+			else if i >=0 && i < 1 lsl 7 then
+				(add pc 2; [Lilz (r,Imm i)])
+			else if i < 0 && i >= - ( 1 lsl 7 ) then
+				(add pc 4; [Lil (r,Imm i); Liu (r,Imm 0xFF)])
+			else (add pc 4; [Lil (r,Imm (i land 0x00FF)); Liu (r,Imm ((i land 0xFF00) asr 8))])
 		| Lab id ->
 			add pc 4; [Lilz (r,Lab id); Liu (r,Lab id)]
+			
+	let itw = function
+		| Imm i -> Word i
+		| Lab l -> Wlab l
 	
 %}
 
-%token EOF,COLON,TEXT,DATA,BYTE,WORD,MINUS,MOVE,JZ,JNZ,LP,RP,HLT,ASCII
+%token EOF,COLON,TEXT,DATA,BYTE,WORD,MINUS,MOVE,JZ,JNZ,LP,RP,HLT,ASCII,SEMIC
 %token POP,PUSH,INCRI,SHI,JJ,JAL,JR,JALR,LW,SW,LB,SB,NOT,LIL,LILZ,LIU,LIUZ,LRA,LI
 %token<Asm.reg> REG
 %token<Asm.fmt_r> ROP,RIOP
@@ -127,8 +134,8 @@ _instr:
 		add pc 2; l @ [R (Jner,5,r,0)] }
 	| POP r=REG { add pc 4; [Lw (r,7,0); Incri (7,2)] }
 	| PUSH r=REG { add pc 4; [Incri (7,-2); Sw (r,7,0)] }
-	| BYTE bs=int* { List.map (fun b -> add pc 1; Byte b) bs }
-	| WORD ws=int* { List.map (fun w -> add pc 2; Word w) ws }
+	| BYTE bs=int+ SEMIC { List.map (fun b -> add pc 1; Byte b) bs }
+	| WORD ws=imm+ SEMIC { List.map (fun w -> add pc 2; itw w) ws }
 	| HLT { add pc 2; [Hlt] }
 	| ASCII s=STR { List.map (fun c -> add pc 1; Byte (Char.code c)) s }
 	

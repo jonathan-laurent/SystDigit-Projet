@@ -116,7 +116,8 @@ let print_program p =
 			sprintf "liuz %s %s" (rts r) (its i)
 		| Hlt -> (0b01111 lsl 11),"hlt"
 		| Word w -> (byte 16 w), ""
-		| Byte b -> byte 8 b, ""  in
+		| Byte b -> byte 8 b, ""
+		| Wlab l -> fst (Imap.find l p.lbls), l  in
 	let n = List.fold_left (fun n i -> size i + n) 0 p.text in
 	let rev_lbls = Array.make n "" in
 	Imap.iter (fun l (v,t) ->
@@ -133,7 +134,8 @@ let print_program p =
 			else printf "\n";
 			pc := !pc + 2
 		) else (
-			printf "%s\n" (bts w) ) in
+			printf "%s\n" (bts w);
+			incr pc ) in
 	printf "%d %d\n" (n) 8;
 	List.iter f p.text;
 	printf "\n"
