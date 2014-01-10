@@ -225,9 +225,9 @@ error:
 
 # For unit-tests
 testlist:
-    word unit_test_0 unit_test_1 unit_test_2 unit_test_3 0;
+    word unit_test_0 unit_test_1 unit_test_2 unit_test_3 0
 teststr:
-    word test0 test1 test2 test3 0;
+    word test0 test1 test2 test3 0
 testbegin:
     ascii "Runing CPU unit tests...\n"
 testok:

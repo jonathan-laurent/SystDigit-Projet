@@ -86,7 +86,7 @@ rule token = parse
 	| '#' { comment lexbuf }
 	| ['\t' '\r' ' '] { token lexbuf }
 	| ':' { COLON }
-	| '\n' { Lexing.new_line lexbuf; token lexbuf }
+	| '\n' { Lexing.new_line lexbuf; NLB }
 	| ((['a'-'z'] | '_') (alpha | digit | '_')*) as id
 		{ try ROP (List.assoc id keywords_r)
 			with Not_found -> try RIOP (List.assoc id keywords_ri)
@@ -108,7 +108,6 @@ rule token = parse
 	| '(' { LP }
 	| ')' { RP }
 	| '"' { str [] lexbuf }
-	|';' { SEMIC }
 
 and str acc = parse
 	| "\\\\" { str ('\\' :: acc) lexbuf }
