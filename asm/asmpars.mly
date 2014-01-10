@@ -40,7 +40,7 @@
 	
 %}
 
-%token EOF,COLON,TEXT,DATA,BYTE,WORD,MINUS,MOVE,JZ,JNZ,LP,RP,HLT,ASCII,SEMIC
+%token EOF,COLON,TEXT,DATA,BYTE,WORD,MINUS,MOVE,JZ,JNZ,LP,RP,HLT,ASCII,NLB
 %token POP,PUSH,INCRI,SHI,JJ,JAL,JR,JALR,LW,SW,LB,SB,NOT,LIL,LILZ,LIU,LIUZ,LRA,LI
 %token<Asm.reg> REG
 %token<Asm.fmt_r> ROP,RIOP
@@ -53,17 +53,17 @@
 %%
 
 program:
-	TEXT is=instr* data? EOF
+	TEXT NLB* is=instr* data? EOF
 	{ { text = List.flatten is;
 		lbls = !lbls2 } }
 	
 data:
-	DATA d=datas* { d }
+	DATA NLB* d=datas* { d }
 	
 datas:
-	| labeld datas { () }
-	| BYTE n=INT { add ram n }
-	| WORD n=INT { add ram (2*n) }
+	| labeld NLB* datas { () }
+	| BYTE n=INT NLB+ { add ram n }
+	| WORD n=INT NLB+ { add ram (2*n) }
 	
 labeli:
 	id=ID COLON { lbls2 := Imap.add id (!pc,true) !lbls2 }
@@ -72,8 +72,8 @@ labeld:
 	id=ID COLON { lbls2 := Imap.add id (!ram,false) !lbls2 }
 
 instr:
-	| labeli i=instr { i }
-	| i=_instr { i }
+	| labeli NLB* i=instr { i }
+	| i=_instr NLB+ { i }
 	
 _instr:
 	| o=ROP r1=REG r2=REG r3=REG { add pc 2; [R (o,r1,r2,r3)] }
@@ -134,11 +134,11 @@ _instr:
 		add pc 2; l @ [R (Jner,r,5,0)] }
 	| POP r=REG { add pc 4; [Lw (r,7,0); Incri (7,2)] }
 	| PUSH r=REG { add pc 4; [Incri (7,-2); Sw (r,7,0)] }
-	| BYTE bs=int+ SEMIC { List.map (fun b -> add pc 1; Byte b) bs }
-	| WORD ws=imm+ SEMIC { List.map (fun w -> add pc 2; itw w) ws }
+	| BYTE bs=int+ { List.map (fun b -> add pc 1; Byte b) bs }
+	| WORD ws=imm+ { List.map (fun w -> add pc 2; itw w) ws }
 	| HLT { add pc 2; [Hlt] }
 	| ASCII s=STR { List.map (fun c -> add pc 1; Byte (Char.code c)) s }
-	
+
 imm:
 	| id=ID { Lab id }
 	| n=int { Imm n }
