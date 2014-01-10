@@ -157,15 +157,15 @@ let rl, rh, i, ex, exf, pc =
     let f0 = i_i ** 0 in
     let f1 = i_i ** 1 in
     let double_instr_alu = instr_alu ^& (not f1) ^& (i_f ** 1) ^& (ne_n 3 i_r (const "101")) in
-    let instr_alu = exec ^& instr_alu in
-    let instr_alu_2 = reg 1 (exec ^& double_instr_alu) in
 
-    let alu_d1, alu_d2 = alu f1 f0 i_f v_ra v_rb in
-    let wr = mux instr_alu wr i_r in
-    let rwd = mux instr_alu rwd alu_d1 in
-    let wr = mux instr_alu_2 wr (const "101") in
-    let rwd = mux instr_alu_2 rwd alu_d2 in
-    let exec_finished = mux double_instr_alu exec_finished instr_alu_2 in
+    let alu_d1, alu_d2, instr_alu_finished = alu f1 f0 i_f v_ra v_rb (exec ^& instr_alu) in
+    let instr_alu_store_2 = reg 1 (instr_alu_finished ^& double_instr_alu) in
+    let wr = mux instr_alu_finished wr i_r in
+    let rwd = mux instr_alu_finished rwd alu_d1 in
+    let wr = mux instr_alu_store_2 wr (const "101") in
+    let rwd = mux instr_alu_store_2 rwd alu_d2 in
+    let exec_finished = mux instr_alu exec_finished 
+        (mux double_instr_alu instr_alu_finished instr_alu_store_2) in
 
 
     (* instruction : se/sne/slt/slte/sleu/sleu *)

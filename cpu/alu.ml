@@ -56,17 +56,17 @@ let nadder n a b =
 let rec nsubber n a b =
     zeroes n (* TODO *)
 
-let rec nmul n a b =
-    zeroes n, zeroes n (* TODO : retuns lo and hi part of 32-bit answer *)
+let rec nmul n a b start_signal =
+    zeroes n, zeroes n, start_signal (* TODO : retuns lo and hi part of 32-bit answer *)
 
-let rec ndiv n a b =
-    zeroes n, zeroes n (* TODO : returns quotient and remainder *)
+let rec ndiv n a b start_signal =
+    zeroes n, zeroes n, start_signal (* TODO : returns quotient and remainder *)
 
-let rec nmulu n a b =
-    zeroes n, zeroes n (* TODO : same as nmul but unsigned *)
+let rec nmulu n a b start_signal =
+    zeroes n, zeroes n, start_signal (* TODO : same as nmul but unsigned *)
 
-let rec ndivu n a b =
-    zeroes n, zeroes n (* TODO : save as ndiv but unsigned *)
+let rec ndivu n a b start_signal =
+    zeroes n, zeroes n, start_signal (* TODO : save as ndiv but unsigned *)
 
 (* Shifts *)
 
@@ -123,14 +123,14 @@ let alu_comparer n f0 f a b =
     let lte = mux (f ** 1) lte_signed lte_unsigned in
     mux f0 eq_ne lte
 
-let alu_arith f1 f a b =
+let alu_arith f1 f a b start_signal =
     (*  See table for ALU below *)
     let add = nadder 16 a b in
     let sub = nsubber 16 a b in
-    let mul, mul2 = nmul 16 a b in
-    let div, div2 = ndiv 16 a b in
-    let mulu, mulu2 = nmulu 16 a b in
-    let divu, divu2 = ndivu 16 a b in
+    let mul, mul2, mul_end_signal = nmul 16 a b start_signal in
+    let div, div2, div_end_signal = ndiv 16 a b start_signal in
+    let mulu, mulu2, mulu_end_signal = nmulu 16 a b start_signal in
+    let divu, divu2, divu_end_signal = ndivu 16 a b start_signal in
     let q00 = mux (f ** 0) add sub in
     let q01 = mux (f ** 0) mul div in
     let q03 = mux (f ** 0) mulu divu in
@@ -142,7 +142,12 @@ let alu_arith f1 f a b =
     let r10 = mux (f ** 1) (zeroes 16) r01 in
     let r11 = mux (f ** 1) (zeroes 16) r03 in
     let r = mux f1 r10 r11 in
-    q, r
+    let s01 = mux (f ** 0) mul_end_signal div_end_signal in
+    let s03 = mux (f ** 0) mulu_end_signal divu_end_signal in
+    let s10 = mux (f ** 1) start_signal s01 in
+    let s11 = mux (f ** 1) start_signal s03 in
+    let end_signal = mux f1 s10 s11 in
+    q, r, end_signal
 
 let alu_logic f a b =
     (*  See table for ALU below *)
@@ -155,7 +160,7 @@ let alu_shifts f a b =
     let q1 = mux (f ** 0) (op_lsr 16 a b) (op_asr 16 a b) in
     mux (f ** 1) (op_lsl 16 a b) q1
 
-let alu f1 f0 f a b =
+let alu f1 f0 f a b start_signal =
     (*
         f0  f1  f   action
         --  --  -   ------
@@ -176,12 +181,13 @@ let alu f1 f0 f a b =
         1   1   2   lsr
         1   1   3   asr
     *)
-    let arith, arith_r = alu_arith f1 f a b in
+    let arith, arith_r, arith_end_signal = alu_arith f1 f a b start_signal in
     let logic = alu_logic f a b in
     let shifts = alu_shifts f a b in
 
     let q0 = mux f1 logic shifts in
     let s = mux f0 arith q0 in
     let r = mux f0 arith_r (zeroes 16) in
-    s, r
+    let end_signal = mux f0 arith_end_signal start_signal in
+    s, r, end_signal
 

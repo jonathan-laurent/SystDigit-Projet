@@ -87,6 +87,7 @@ add_b_to_string:
     incri C 1
     sw C 0(D)
     pop A
+    jz A check_input
 check_input_ret:
     jr RA
     
