@@ -119,35 +119,47 @@ let rec split_list = function
   | [_] -> assert false
   | x::y::tl -> let a, b = split_list tl in x::a, y::b
 
-(* n must be a power of two *)
 let nmulu n a b start_signal =
   let next_busy, set_next_busy = loop 1 in
   let busy = start_signal ^| (reg 1 next_busy) in
 
+  (* 'mule' est intialisé à b au début de la multiplication,
+      puis à chaque cycle est shifté de 1 bit vers la droite (donc perd le bit de poid faible) *)
+  let mule, set_mule = loop n in
+  let mule = set_mule (mux start_signal (((reg n mule) % (1, n-1)) ++ const "0") b) in
+  (* 'adde' est initialisé à a étendu sur 32 bits au début de la multiplication,
+      puis à chaque cycle est shifté de 1 bit vers la gauche (donc multiplié par 2) *)
+  let adde, set_adde = loop (2*n) in
+  let adde = set_adde (mux start_signal (const "0" ++ ((reg (2*n) adde) % (0, 2*n-2))) (a ++ (zeroes n))) in
+
+  (* 'res' est un accumulateur qui contient le résultat que l'on calcule,
+      il est initialisé à 0 au début de la multiplication, et à chaque cycle
+      si mule[0] est non nul, on lui rajoute adde (c'est correct) *)
   let res, set_res = loop (2*n) in
-  let t_res = mux start_signal (const "0" ++ ((reg (2*n) res) % (0, 2*n-2))) (zeroes (2*n)) in
-  let mul, set_mul = loop n in
-  let mul = set_mul (mux start_signal (((reg n mul) % (1, n-1)) ++ const "0") b) in
-  let add = nonnull n mul in
-  let res = set_res (mux add t_res (nadder (2*n) (a ++ zeroes n) t_res)) in
+  let t_res = mux start_signal (reg (2*n) res) (zeroes (2*n)) in
+  let res = set_res (mux (mule ** 0) t_res (nadder (2*n) adde t_res)) in
+  let work_remains = nonnull (n - 1) (mule % (1, n-1)) in
 
   let finished = 
-    set_next_busy (busy ^& add) ^.
-    (not add) ^& busy in
+    set_next_busy (busy ^& work_remains) ^.
+    (not work_remains) ^& busy in
 
   res % (0, n-1), res % (n, 2*n-1), finished
 
 
 
 let rec ndivu n a b start_signal =
-    zeroes n, zeroes n, start_signal (* TODO : unsigned division, returns quotient and remainder *)
+    zeroes (n-3) ++ const "110", zeroes (n-3) ++ const "110", start_signal
+    (* TODO : unsigned division, returns quotient and remainder *)
 
 let rec nmul n a b start_signal =
-    zeroes n, zeroes n, start_signal (* TODO : signed multiplication ; returns low part and high part *)
+    zeroes (n-3) ++ const "101", zeroes (n-3) ++ const "101", start_signal
+    (* TODO : signed multiplication ; returns low part and high part *)
 
 
 let rec ndiv n a b start_signal =
-    zeroes n, zeroes n, start_signal (* TODO : signed division *)
+    zeroes (n - 3) ++ const "011", zeroes (n - 3) ++ const "011", start_signal
+    (* TODO : signed division *)
 
 
 (* Shifts *)
@@ -205,7 +217,7 @@ let alu_comparer n f0 f a b =
     let lte = mux (f ** 1) lte_signed lte_unsigned in
     mux f0 eq_ne lte
 
-let alu_arith f1 f a b start_signal =
+let alu_arith f0 f a b start_signal =
     (*  See table for ALU below *)
     let add = nadder 16 a b in
     let sub = nsubber 16 a b in
@@ -218,17 +230,17 @@ let alu_arith f1 f a b start_signal =
     let q03 = mux (f ** 0) mulu divu in
     let q10 = mux (f ** 1) q00 q01 in
     let q11 = mux (f ** 1) q00 q03 in
-    let q = mux f1 q10 q11 in
+    let q = mux f0 q10 q11 in
     let r01 = mux (f ** 0) mul2 div2 in
     let r03 = mux (f ** 0) mulu2 divu2 in
     let r10 = mux (f ** 1) (zeroes 16) r01 in
     let r11 = mux (f ** 1) (zeroes 16) r03 in
-    let r = mux f1 r10 r11 in
+    let r = mux f0 r10 r11 in
     let s01 = mux (f ** 0) mul_end_signal div_end_signal in
     let s03 = mux (f ** 0) mulu_end_signal divu_end_signal in
     let s10 = mux (f ** 1) start_signal s01 in
     let s11 = mux (f ** 1) start_signal s03 in
-    let end_signal = mux f1 s10 s11 in
+    let end_signal = mux f0 s10 s11 in
     q, r, end_signal
 
 let alu_logic f a b =
@@ -244,7 +256,7 @@ let alu_shifts f a b =
 
 let alu f1 f0 f a b start_signal =
     (*
-        f0  f1  f   action
+        f1  f0  f   action
         --  --  -   ------
         0   0   0   add
         0   0   1   sub
@@ -263,13 +275,13 @@ let alu f1 f0 f a b start_signal =
         1   1   2   lsr
         1   1   3   asr
     *)
-    let arith, arith_r, arith_end_signal = alu_arith f1 f a b start_signal in
+    let arith, arith_r, arith_end_signal = alu_arith f0 f a b start_signal in
     let logic = alu_logic f a b in
     let shifts = alu_shifts f a b in
 
-    let q0 = mux f1 logic shifts in
-    let s = mux f0 arith q0 in
-    let r = mux f0 arith_r (zeroes 16) in
-    let end_signal = mux f0 arith_end_signal start_signal in
+    let q0 = mux f0 logic shifts in
+    let s = mux f1 arith q0 in
+    let r = mux f1 arith_r (zeroes 16) in
+    let end_signal = mux f1 arith_end_signal start_signal in
     s, r, end_signal
 

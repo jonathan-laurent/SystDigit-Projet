@@ -141,7 +141,7 @@ t3fail:
   pop RA
   jr RA
 
-unit_test_0:
+unit_test_0:    # Addition / substraction
   li B 1
 
   li C 12
@@ -150,16 +150,46 @@ unit_test_0:
   sei A C 56
   and B B A
 
-  li C -7
+  li C 7
+  sub C Z C
   li D 7
   add C C D
   se A C Z
   and B B A
 
+  li C 32767
+  li D 32767
+  add C C D
+  li D 2
+  sub D Z D
+  se A C D
+  and B B A
+
   jr RA
-unit_test_1:
+
+unit_test_1:  # Unsigned multiplication
   li B 1
+
+  li C 12
+  li D 44
+  mulu C C D
+  move D E
+  sei A C 528
+  and B B A
+  se A D Z
+  and B B A
+
+  li C 744
+  li D 1244
+  mulu C C D
+  move D E
+  sei A C 8032
+  and B B A
+  sei A D 14
+  and B B A
+  
   jr RA
+
 unit_test_2:
   li B 1
   jr RA

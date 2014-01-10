@@ -154,8 +154,8 @@ let rl, rh, i, ex, exf, pc =
 
     (* instruction : add/sub/mul/div/unsigned/or/and/xor/nor/lsl/lsr/asr *)
     let instr_alu = eq_c 3 (i_i % (2, 4)) 0b000 in
-    let f0 = i_i ** 0 in
     let f1 = i_i ** 1 in
+    let f0 = i_i ** 0 in
     let double_instr_alu = instr_alu ^& (not f1) ^& (i_f ** 1) ^& (ne_n 3 i_r (const "101")) in
 
     let alu_d1, alu_d2, instr_alu_finished = alu f1 f0 i_f v_ra v_rb (exec ^& instr_alu) in
@@ -277,6 +277,11 @@ let rl, rh, i, ex, exf, pc =
         (mux instr_liux
             ( (* lil *) i_id ++ (mux instr_lixz (v_r % (8, 15)) (zeroes 8)))
             ( (* liu *) (mux instr_lixz (v_r % (0, 7)) (zeroes 8)) ++ i_id)) in
+
+    (* instruction : lie *)
+    let instr_lie = eq_c 5 i_i 0b11100 in
+    let wr = mux instr_lie wr i_r in
+    let rwd= mux instr_lie rwd (sign_extend 8 16 i_id) in
 
     save_cpu_regs wr rwd ^.
     save_ram_read (cpu_ram ra we wa d) ^.
