@@ -53,20 +53,102 @@ let nadder n a b =
     let a, b = nadder_with_carry n a b (const "0") in
     b ^. a
 
+let neg n a = nadder n (not a) (one n)
+
 let rec nsubber n a b =
-    zeroes n (* TODO *)
+  let r, c = nadder_with_carry n a (not b) (const "1") in
+  c ^. r
 
-let rec nmul n a b start_signal =
-    zeroes n, zeroes n, start_signal (* TODO : retuns lo and hi part of 32-bit answer *)
 
-let rec ndiv n a b start_signal =
-    zeroes n, zeroes n, start_signal (* TODO : returns quotient and remainder *)
 
-let rec nmulu n a b start_signal =
-    zeroes n, zeroes n, start_signal (* TODO : same as nmul but unsigned *)
+
+(* Some operations on Redundant Binary Representation 
+   Each binary digit is encoded on 2 bits 
+
+   A n-digits number in RBR is written
+   [a_0, a'_0, a_1, a'_1, ..., a_(n-1), a'_(n-1)]
+
+*)
+
+(* [a] and [b] are encoded on 2n bits
+   [c_in] and [c_out] on 2 bits *)
+
+let rec rbr_nadder_with_carry n a b c_in =
+
+  if n = 0 then (zeroes 0), c_in else
+
+  let fa1s, fa1r = fulladder (a ** 1) (b ** 0) (b ** 1) in
+  let fa2s, fa2r = fulladder (c_in ** 1) (a ** 0) fa1s in
+
+  let rec_s, rec_c = 
+    rbr_nadder_with_carry (n - 1) 
+      (a % (2, 2*n - 1)) 
+      (b % (2, 2*n - 1)) 
+      (fa1r ++ fa2r)
+
+  in (c_in ** 0) ++ fa2s ++ rec_s, rec_c
+
+
+let rbr_nadder n a b = 
+  let s, c = rbr_nadder_with_carry n a b (zeroes 2) in
+  c ^. s
+
+
+let bin_of_rbr n a c = 
+
+  (* Split even and odd bits *)
+  let rec split_bits n a =
+    if n = 0 then (zeroes 0, zeroes 0) 
+    else
+      let even, odd = split_bits (n-1) (a % (2, 2*n - 1)) in
+      (a ** 0) ++ even, (a ** 1) ++ odd
+
+  in
+  let a_even, a_odd = split_bits n a in
+
+  nadder n a_even a_odd
+    
+    
+
+(* TODO : move to utils module *)
+let rec range a b = if a > b then [] else a :: (range (a+1) b)
+
+(* Sépare en deux listes de même taille une liste de taille paire *)
+let rec split_list = function
+  | [] -> [], []
+  | [_] -> assert false
+  | x::y::tl -> let a, b = split_list tl in x::a, y::b
+
+(* n must be a power of two *)
+let nmulu n a b start_signal =
+  let next_busy, set_next_busy = loop 1 in
+  let busy = start_signal ^| (reg 1 next_busy) in
+
+  let res, set_res = loop (2*n) in
+  let t_res = mux start_signal (const "0" ++ ((reg (2*n) res) % (0, 2*n-2))) (zeroes (2*n)) in
+  let mul, set_mul = loop n in
+  let mul = set_mul (mux start_signal (((reg n mul) % (1, n-1)) ++ const "0") b) in
+  let add = nonnull n mul in
+  let res = set_res (mux add t_res (nadder (2*n) (a ++ zeroes n) t_res)) in
+
+  let finished = 
+    set_next_busy (busy ^& add) ^.
+    (not add) ^& busy in
+
+  res % (0, n-1), res % (n, 2*n-1), finished
+
+
 
 let rec ndivu n a b start_signal =
-    zeroes n, zeroes n, start_signal (* TODO : save as ndiv but unsigned *)
+    zeroes n, zeroes n, start_signal (* TODO : unsigned division, returns quotient and remainder *)
+
+let rec nmul n a b start_signal =
+    zeroes n, zeroes n, start_signal (* TODO : signed multiplication ; returns low part and high part *)
+
+
+let rec ndiv n a b start_signal =
+    zeroes n, zeroes n, start_signal (* TODO : signed division *)
+
 
 (* Shifts *)
 

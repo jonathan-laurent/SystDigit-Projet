@@ -4,6 +4,8 @@
 #       all registers are caller-saved, except SP which is preserved by function calls
 
 .text
+    jal run_unit_tests 
+
     li A msghello
     jal ser_out_msg
 
@@ -90,6 +92,81 @@ add_b_to_string:
     jz A check_input
 check_input_ret:
     jr RA
+
+# PROCEDURE: run_unit_tests
+# ROLE: check that CPU features work correctly ; displays message to serial output
+# ARGUMENTS: none
+run_unit_tests:
+  push RA
+  
+  li A testbegin
+  jal ser_out_msg
+
+  li A test0
+  jal ser_out_msg
+  jal unit_test_0
+  li A testfail
+  jz B t0fail
+  li A testok
+t0fail:
+  jal ser_out_msg
+
+  li A test1
+  jal ser_out_msg
+  jal unit_test_1
+  li A testfail
+  jz B t1fail
+  li A testok
+t1fail:
+  jal ser_out_msg
+
+  li A test2
+  jal ser_out_msg
+  jal unit_test_2
+  li A testfail
+  jz B t2fail
+  li A testok
+t2fail:
+  jal ser_out_msg
+
+  li A test3
+  jal ser_out_msg
+  jal unit_test_3
+  li A testfail
+  jz B t2fail
+  li A testok
+t3fail:
+  jal ser_out_msg
+
+  pop RA
+  jr RA
+
+unit_test_0:
+  li B 1
+
+  li C 12
+  li D 44
+  add C C D
+  sei A C 56
+  and B B A
+
+  li C -7
+  li D 7
+  add C C D
+  se A C Z
+  and B B A
+
+  jr RA
+unit_test_1:
+  li B 1
+  jr RA
+unit_test_2:
+  li B 1
+  jr RA
+unit_test_3:
+  li B 1
+  jr RA
+
     
 
 # READ-ONLY PROGRAM DATA
@@ -103,6 +180,22 @@ endl:
     ascii "\n"
 error:
     ascii "Sorry but I'm to stupid to understand that.\n"
+
+testbegin:
+  ascii "Runing CPU unit tests...\n"
+testok:
+  ascii "OK\n"
+testfail:
+  ascii "FAIL\n"
+test0:
+  ascii "Addition/substraction: "
+test1:
+  ascii "Unsigned multiplication: "
+test2:
+  ascii "Unsigned division: "
+test3:
+  ascii "Signed division/multiplication: "
+
 
 
 .data
