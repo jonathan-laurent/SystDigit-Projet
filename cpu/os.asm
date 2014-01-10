@@ -213,7 +213,7 @@ unit_test_3:        # Signed multiplication/division
 
 # General strings
 msghello:
-    ascii "Hello, world!\n"
+    ascii "\nHello, world!\n"
 msgtick:
     ascii " ..."
 prompt:
@@ -235,13 +235,13 @@ testok:
 testfail:
     ascii "FAIL\n"
 test0:
-    ascii "Addition/substraction: "
+    ascii "Addition/substraction..........."
 test1:
-    ascii "Unsigned multiplication: "
+    ascii "Unsigned multiplication........."
 test2:
-    ascii "Unsigned division: "
+    ascii "Unsigned division..............."
 test3:
-    ascii "Signed multiplication/division: "
+    ascii "Signed multiplication/division.."
 
 
 
