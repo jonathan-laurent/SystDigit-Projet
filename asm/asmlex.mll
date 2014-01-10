@@ -104,6 +104,7 @@ rule token = parse
 	| '(' { LP }
 	| ')' { RP }
 	| '"' { str [] lexbuf }
+	|';' { SEMIC }
 
 and str acc = parse
 	| "\\\\" { str ('\\' :: acc) lexbuf }

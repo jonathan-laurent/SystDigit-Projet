@@ -56,6 +56,7 @@ type instr =
 	| Lra of imm
 	| Byte of int
 	| Word of int
+	| Wlab of string
 	| Hlt
 
 module Imap = Map.Make(String)
