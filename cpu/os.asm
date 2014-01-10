@@ -97,109 +97,121 @@ check_input_ret:
 # ROLE: check that CPU features work correctly ; displays message to serial output
 # ARGUMENTS: none
 run_unit_tests:
-  push RA
-  
-  li A testbegin
-  jal ser_out_msg
+    push RA
 
-  li A test0
-  jal ser_out_msg
-  jal unit_test_0
-  li A testfail
-  jz B t0fail
-  li A testok
-t0fail:
-  jal ser_out_msg
+    li A testbegin
+    jal ser_out_msg
 
-  li A test1
-  jal ser_out_msg
-  jal unit_test_1
-  li A testfail
-  jz B t1fail
-  li A testok
-t1fail:
-  jal ser_out_msg
+    move B Z
 
-  li A test2
-  jal ser_out_msg
-  jal unit_test_2
-  li A testfail
-  jz B t2fail
-  li A testok
-t2fail:
-  jal ser_out_msg
+unit_test_begin:
+    li D testlist
+    add D D B
+    lw D 0(D)
+    jz D unit_tests_done
+    
+    push B
+    push D
+    li A teststr
+    add A A B
+    lw A 0(A)
+    jal ser_out_msg
+    pop D
+    jalr D
+    li A testfail
+    jz B unit_test_failed
+    li A testok
+unit_test_failed:
+    jal ser_out_msg
 
-  li A test3
-  jal ser_out_msg
-  jal unit_test_3
-  li A testfail
-  jz B t2fail
-  li A testok
-t3fail:
-  jal ser_out_msg
+    pop B
+    addi B B 2
+    j unit_test_begin
 
-  pop RA
-  jr RA
+unit_tests_done:
+    pop RA
+    jr RA
+
 
 unit_test_0:    # Addition / substraction
-  li B 1
+    li B 1
 
-  li C 12
-  li D 44
-  add C C D
-  sei A C 56
-  and B B A
+    li C 12
+    li D 44
+    add C C D
+    sei A C 56
+    and B B A
 
-  li C 7
-  sub C Z C
-  li D 7
-  add C C D
-  se A C Z
-  and B B A
+    li C -7
+    li D 7
+    add C C D
+    se A C Z
+    and B B A
 
-  li C 32767
-  li D 32767
-  add C C D
-  li D 2
-  sub D Z D
-  se A C D
-  and B B A
+    li C 32767
+    li D 32767
+    add C C D
+    li D 2
+    sub D Z D
+    se A C D
+    and B B A
 
-  jr RA
+    jr RA
 
 unit_test_1:  # Unsigned multiplication
-  li B 1
+    li B 1
 
-  li C 12
-  li D 44
-  mulu C C D
-  move D E
-  sei A C 528
-  and B B A
-  se A D Z
-  and B B A
+    li C 12
+    li D 44
+    mulu C C D
+    move D E
+    sei A C 528
+    and B B A
+    se A D Z
+    and B B A
 
-  li C 744
-  li D 1244
-  mulu C C D
-  move D E
-  sei A C 8032
-  and B B A
-  sei A D 14
-  and B B A
-  
-  jr RA
+    li C 744
+    li D 1244
+    mulu C C D
+    move D E
+    sei A C 8032
+    and B B A
+    sei A D 14
+    and B B A
+    
+    jr RA
 
-unit_test_2:
-  li B 1
-  jr RA
-unit_test_3:
-  li B 1
-  jr RA
+unit_test_2:        # Unsigned division
+    li B 1
+
+    li C 60
+    li D 5
+    divu C C D
+    move D E
+    sei A C 12
+    and B B A
+    se A D Z
+    and B B A
+
+    li C 14129
+    li D 477
+    divu C C D
+    move D E
+    sei A C 31
+    and B B A
+    sei A D 272
+    and B B A
+
+    jr RA
+unit_test_3:        # Signed multiplication/division
+    li B 0
+    jr RA
 
     
 
 # READ-ONLY PROGRAM DATA
+
+# General strings
 msghello:
     ascii "Hello, world!\n"
 msgtick:
@@ -211,20 +223,25 @@ endl:
 error:
     ascii "Sorry but I'm to stupid to understand that.\n"
 
+# For unit-tests
+testlist:
+    word unit_test_0 unit_test_1 unit_test_2 unit_test_3 0;
+teststr:
+    word test0 test1 test2 test3 0;
 testbegin:
-  ascii "Runing CPU unit tests...\n"
+    ascii "Runing CPU unit tests...\n"
 testok:
-  ascii "OK\n"
+    ascii "OK\n"
 testfail:
-  ascii "FAIL\n"
+    ascii "FAIL\n"
 test0:
-  ascii "Addition/substraction: "
+    ascii "Addition/substraction: "
 test1:
-  ascii "Unsigned multiplication: "
+    ascii "Unsigned multiplication: "
 test2:
-  ascii "Unsigned division: "
+    ascii "Unsigned division: "
 test3:
-  ascii "Signed division/multiplication: "
+    ascii "Signed multiplication/division: "
 
 
 
