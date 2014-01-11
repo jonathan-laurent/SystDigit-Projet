@@ -62,6 +62,36 @@ let rec nsubber n a b =
 
 
 
+(* Comparisons *)
+
+let rec eq_n n a b =
+    all1 n (not (a ^^ b))
+
+let rec ne_n n a b =
+    nonnull n (a ^^ b)
+
+let rec lt_n n a b =
+    const "0"       (* TODO : less than *)
+
+let rec ult_n n a b =
+    const "0"       (* TODO : less than, unsigned *)
+
+let rec le_n n a b =
+    const "0"       (* TODO : less than or equal *)
+
+let rec ule_n n a b =
+  if n = 0 then const "1" else
+    mux ((eq_c 1 (a ** (n-1)) 1) ^& (eq_c 1 (b ** (n-1)) 0))
+      (mux ((eq_c 1 (a ** (n-1)) 0) ^& (eq_c 1 (b ** (n-1)) 1))
+         (ule_n (n-1) (a % (0, n-2)) (b % (0, n-2)))
+         (const "1")
+      )
+      (const "0")
+
+
+
+
+
 (* Some operations on Redundant Binary Representation 
    Each binary digit is encoded on 2 bits 
 
@@ -119,6 +149,11 @@ let rec split_list = function
   | [_] -> assert false
   | x::y::tl -> let a, b = split_list tl in x::a, y::b
 
+
+
+(* Décalage de 1 bit vers les poids forts (multiplication par deux) *)
+let shiftl1 n a = const "0" ++ (a % (0, n-2))
+
 let nmulu n a b start_signal =
   let next_busy, set_next_busy = loop 1 in
   let busy = start_signal ^| (reg 1 next_busy) in
@@ -130,7 +165,7 @@ let nmulu n a b start_signal =
   (* 'adde' est initialisé à a étendu sur 32 bits au début de la multiplication,
       puis à chaque cycle est shifté de 1 bit vers la gauche (donc multiplié par 2) *)
   let adde, set_adde = loop (2*n) in
-  let adde = set_adde (mux start_signal (const "0" ++ ((reg (2*n) adde) % (0, 2*n-2))) (a ++ (zeroes n))) in
+  let adde = set_adde (mux start_signal (shiftl1 (2*n) (reg (2*n) adde)) (a ++ (zeroes n))) in
 
   (* 'res' est un accumulateur qui contient le résultat que l'on calcule,
       il est initialisé à 0 au début de la multiplication, et à chaque cycle
@@ -148,9 +183,75 @@ let nmulu n a b start_signal =
 
 
 
+
+
 let rec ndivu n a b start_signal =
-    zeroes (n-3) ++ const "110", zeroes (n-3) ++ const "110", start_signal
-    (* TODO : unsigned division, returns quotient and remainder *)
+
+  let next_busy, set_next_busy = loop 1 in
+  let busy = start_signal ^| (reg 1 next_busy) in
+
+  let dd, set_dd = loop n in  (* dividande *)
+  let q , set_q  = loop n in  (* quotient *)
+  let r , set_r  = loop n in  (* reste *)
+
+  (* L'algorithme doit se poursuivre sur n cycles
+     exactement. c est une constante sur n bits, composée
+     uniquement de 1, qui est décalée à chaque étape, si
+     bien que le calcul est terminé quand c vaut 0 *)
+
+  let c , set_c  = loop n in  
+
+
+
+
+  (* On définit la concaténée des nouvelles valeurs de dd, q, r, et c *)
+
+  let ddqrc = set_dd (
+    mux start_signal 
+      (* A chaque nouvelle étape *)
+      (
+
+        (* A l'itération i (i = 0 ... n - 1) Le bit de poids fort de [dd]
+           correspond au bit (n-i-1) du dividande original *)
+        (shiftl1 n (reg n dd)) ++ 
+          q ++ (* Le quotient reste pour l'instant inchangé *)
+          ((dd ** (n-1)) ++ ((reg n r) % (0, n-2))) ++ (* On abaisse le bit (n-i-1) du dividande *)
+          shiftl1 n c (* on décale c *)
+      )
+
+      (* Initialisation *)
+      ((a) ++ (zeroes n) ++ (zeroes n) ++ (rep n (const "1")))  )
+  in
+
+  let dd = set_dd (ddqrc % (0, n-1))     in
+  let q' =        (ddqrc % (n, 2*n-1))   in
+  let r' =        (ddqrc % (2*n, 3*n-1)) in
+  let c  = set_c  (ddqrc % (3*n, 4*n-1)) in
+
+ 
+  (* Si r >= d alors r := r - d et q(n-i-1) := 1 *)
+  let rq = mux (ule_n n b r')
+    (r' ++ (const "0") ++ ((reg n q') % (0, n-2)))
+    ((nsubber n r' b) ++ (const "1") ++ ((reg n q') % (0, n-2))) in
+
+  let r = set_r (rq % (0, n-1)) in
+  let q = set_q (rq % (n, 2*n-1)) in
+
+  let work_remains = nonnull n c in
+
+  let finished = 
+    set_next_busy (busy ^& work_remains) ^. 
+      (not work_remains) ^& busy in
+
+  dd ^. c ^. 
+    q, r, finished
+  
+  
+
+(* zeroes (n-3) ++ const "110", zeroes (n-3) ++ const "110",
+   start_signal *)
+(* TODO : unsigned division, returns quotient and remainder *)
+
 
 let rec nmul n a b start_signal =
     zeroes (n-3) ++ const "101", zeroes (n-3) ++ const "101", start_signal
@@ -176,25 +277,7 @@ let op_lsr n a b =
 let op_asr n a b =
     a (* TODO (b unsigned size n) *)
 
-(* Comparisons *)
 
-let rec eq_n n a b =
-    all1 n (not (a ^^ b))
-
-let rec ne_n n a b =
-    nonnull n (a ^^ b)
-
-let rec lt_n n a b =
-    const "0"       (* TODO : less than *)
-
-let rec ult_n n a b =
-    const "0"       (* TODO : less than, unsigned *)
-
-let rec le_n n a b =
-    const "0"       (* TODO : less than or equal *)
-
-let rec ule_n n a b =
-    const "0"       (* TODO : less than or equal, unsigned *)
 
 (* Big pieces *)
 
