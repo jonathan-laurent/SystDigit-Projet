@@ -190,7 +190,7 @@ let rec ndivu n a b start_signal =
   let next_busy, set_next_busy = loop 1 in
   let busy = start_signal ^| (reg 1 next_busy) in
 
-  let dd, set_dd = loop n in  (* dividande *)
+  let dd, set_dd = loop n in  (* dividende *)
   let q , set_q  = loop n in  (* quotient *)
   let r , set_r  = loop n in  (* reste *)
 
@@ -210,15 +210,15 @@ let rec ndivu n a b start_signal =
   let r  = mux start_signal (reg n r) (zeroes n) in
 
   (* A l'itération i (i = 0 ... n - 1) Le bit de poids fort de [dd]
-     correspond au bit (n-i-1) du dividande original *)
+     correspond au bit (n-i-1) du dividende original *)
   let dd = set_dd (mux start_signal (shiftl1 n (reg n dd)) a) in
 
-  (* On abaisse le bit (n-i-1) du dividande *)
+  (* On abaisse le bit (n-i-1) du dividende *)
   let r = (dd ** (n-1)) ++ (r % (0, n-2)) in
   
   (* Si r >= d alors r := r - d et q(n-i-1) := 1 *)
   let rq = mux (ule_n n b r)
-    (r ++ ((const "0") ++ (q % (0, n-2))))
+    (r               ++ ((const "0") ++ (q % (0, n-2))))
     ((nsubber n r b) ++ ((const "1") ++ (q % (0, n-2)))) in
 
   let r = set_r (rq % (0, n-1)) in
@@ -230,7 +230,7 @@ let rec ndivu n a b start_signal =
     set_next_busy (busy ^& work_remains) ^. 
       (not work_remains) ^& busy in
 
-  dd ^. c ^. 
+  dd ^. c ^.
     q, r, finished
   
                                    

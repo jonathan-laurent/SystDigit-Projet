@@ -184,13 +184,13 @@ unit_test_1:  # Unsigned multiplication
 unit_test_2:        # Unsigned division
     li B 1
 
-    li C 64
+    li C 61
     li D 5
     divu C C D
     move D E
     sei A C 12
     and B B A
-    sei A D 4
+    sei A D 1
     and B B A
 
     #li C 61
